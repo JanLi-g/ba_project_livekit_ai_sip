@@ -20,14 +20,14 @@ dist/
 .env*.local
 
 # Local secrets and private runtime data
+analysis/
+evaluation/
+kolloqium/
+powershell/
+thesis/
 metrics/
 metrics_report*.json
 livekit-data/
-analysis/raw/
-analysis/processed/
-evaluation/logs/
-evaluation/results/
-thesis/scratches/
 scratch_sources/
 python/old/
 *.ndjson

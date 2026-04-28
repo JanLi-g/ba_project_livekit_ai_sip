@@ -5,8 +5,6 @@
 ## Öffentlich
 - `app/`
 - `python/`
-- `powershell/`
-- `analysis/`, `evaluation/`, `thesis/` ohne private Rohdaten
 - `docker-compose.yml`, `Dockerfile.agent`
 
 ## GitHub Quick Setup
@@ -27,8 +25,9 @@ docker compose up --build
 ## Privat lokal
 - `.env`, `.env.local`
 - echte SIP-/LiveKit-/Telefonie-Zugangsdaten
-- Messdaten, Logs und Rohdateien aus `metrics/`, `livekit-data/`, `analysis/raw/`, `analysis/processed/`, `evaluation/logs/`, `evaluation/results/`
-- Scratch-/Altbestände wie `thesis/scratches/` und `python/old/`
+- `analysis/`, `evaluation/`, `kolloqium/`, `powershell/`, `thesis/`
+- Messdaten, Logs und Rohdateien aus `metrics/`, `livekit-data/`
+- Scratch-/Altbestände wie `python/old/` und `scratch_sources/`
 
 ## Schnellstart
 ```powershell
