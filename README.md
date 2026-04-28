@@ -17,7 +17,6 @@ Dieses Projekt verbindet eine Weboberfläche mit einer SIP-/LiveKit-basierten Sp
 ## Was privat lokal bleiben soll
 - `.env`, `.env.local` sowie alle echten Secrets
 - echte SIP-/LiveKit-/Telefonie-Zugangsdaten
-- `analysis/`, `evaluation/`, `kolloqium/`, `powershell/`, `thesis/`
 - Messdaten, Logs und Rohdateien aus `metrics/`, `livekit-data/`
 - Scratch-/Altbestände wie `python/old/` und `scratch_sources/`
 
