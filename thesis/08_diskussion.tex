@@ -1,0 +1,43 @@
+\chapter{Diskussion, Limitationen und Fazit}\label{chap:diskussion}
+
+Dieses Kapitel erörtert die wesentlichsten Ergebnisse aus der Evaluation und ordnet sie in den bestehenden Kontext der technischen Literatur ein. Der Fokus liegt auf der Bewertung, inwiefern die entwickelte Architektur und der Prototyp die anfangs formulierten Hypothesen erfüllen, sowie auf der Identifikation von Grenzen und Optimierungsmöglichkeiten. Die Ergebnisse werden mit Blick auf praktische Implikationen für produktive Deployments diskutiert.
+
+Die Evaluationsergebnisse bestätigen, dass die entwickelte Architektur eine stabile bidirektionale Audioverbindung zwischen \gls{gls-SIP}-Telefonie und \gls{gls-WebRTC} ermöglicht. Dies zeigt sich in der konsistenten Codec-Verhandlung, der erfolgreichen Überwindung von Netzwerkhindernissen durch \gls{gls-NAT}-Traversierungsmechanismen und der stabilen Verschlüsselung von Medienströmen. Die Anwendung von Opus als Codec und die strikte Einhaltung der \gls{gls-ICE}-, \gls{gls-STUN}- und \gls{gls-TURN}-Standards entsprechen dabei anerkannten Best-Practices für echtzeitfähige Multimediakommunikation \parencite{rfc5245,rfc5766,rfc5764,rfc6716}.
+
+Die gemessenen Systemlatenzen liegen über denen der klassischen IP-Telefonie, was durch die zusätzlichen Verarbeitungsschritte der \gls{gls-KI}-Pipeline (\gls{gls-STT}, \gls{gls-LLM}-Inferenz, \gls{gls-TTS}) zu erklären ist. Ein direkter Vergleich mit klassischen Telefoniestandards ist daher nur eingeschränkt aussagekräftig. Stattdessen sollten die Ergebnisse im Kontext asynchroner, dialogorientierter Anwendungen interpretiert werden.
+
+Zusammengefasst belegen die Evaluationsergebnisse, dass die gewählte Architektur sowohl den aktuellen Stand der Forschung und praktischen Szenarien abbildet. Die implementierten Komponenten folgen den Best-Practices für Echtzeitkommunikation und containerbasierten Deployments. Allerdings identifiziert die Analyse auch deutliche Limitationen und Ansatzpunkte zur Verbesserung, die in den folgenden Abschnitten adressiert werden.
+
+\section{Bewertung der Hypothesenvalidierung}
+
+Die entwickelte Architektur adressiert die in der Einleitung formulierten Hypothesen systematisch. Im Folgenden wird dokumentiert, wie die Evaluation diese Annahmen validiert oder modifiziert hat:
+
+\textbf{H1 (Funktionalität):} Validiert.\\ Die Tests zeigen keine Verarbeitungsfehler oder \gls{gls-RTP}-Timeouts; eine einzelne \gls{gls-STT}-Fehlinterpretation wurde dokumentiert. Die stabile Medienpfad-Integration (\gls{gls-ICE}, \gls{gls-STUN}, \gls{gls-TURN}) bestätigt die bidirektionale Audioübertragung über Systemgrenzen hinweg \parencite{rfc5245,rfc5389,rfc5766,rfc3711}.
+
+\textbf{H2 (Latenz):} Partiell validiert.\\ Die gemessenen Latenzbeiträge der Sprachverarbeitung (\gls{gls-STT}, Transkriptverzögerung, \gls{gls-TTS}) liegen im erwartbaren Bereich für \gls{gls-KI}‑Dialoge und ermöglichen praxistaugliche Interaktionen. Eine vollständige Einordnung nach klassischen \gls{gls-VoIP}‑Standards ist nur eingeschränkt möglich, da externe Netzwerk‑/\gls{gls-SIP}‑Anteile nicht gemessen wurden \parencite{ITU-T-G114}.
+
+\textbf{H3 (Ressourceneffizienz):} Validiert.\\ Die \gls{gls-CPU}-Auslastung von 11,2\,\% und das stabile Verhalten unter Testlast demonstrieren effiziente Ressourcennutzung auf Standard-Hardware im Sinne des \gls{gls-ETSI}-\gls{gls-NFV}-Paradigmas \parencite{ETSI-NFV,ETSI-REL}.
+
+\textbf{H4 (Skalierbarkeit):} Validiert.\\ Die modulare Komponentenstruktur ermöglicht horizontale Skalierung durch Replikation, wie in produktiven Architekturen, gestützt durch aktuelle Literatur, üblich ist \parencite{ETSI-REL,Antonova2025}.
+
+\textbf{H5 (STT-Robustheit):} Qualitativ validiert.\\ Die Transkriptionen zeigten in den Testszenarien überwiegend korrekte Erkennung. Eine Fehlinterpretation wurde dokumentiert. Für produktive Systeme wird eine erweiterte Analyse empfohlen, die in dieser Arbeit nicht durchgeführt wurde und kein Bestandteil der Hypothesen darstellt.
+
+\section{Iterative Entwicklung und Erkenntnisse}
+
+Die iterative Entwicklung zeigte, dass die Menge an Integrationspunktne und ereignisbasierte Architekturprinzipien die Systemstabilität und Ressourcennutzung beeinflussen. In einer frühen Phase wurde Baresip als leichtgewichtiger \gls{gls-SIP} User-Agent genutzt, um die Grundlagen von \gls{gls-SIP}-Registrierung, Authentifizierung und Medienpfad-Steuerung zu verstehen. Baresip ermöglichte es, die Funktionsmechaniken eines \gls{gls-SIP}-Trunks zu lernen, ohne dabei von umfangreicher Dialplan-Logik belastet zu sein. Die gewonnenen Erkenntnisse führten zur Auswahl von Asterisk als stabilem \gls{gls-SIP}-Backend mit reproduzierbarer Dialplan-Konfiguration und deterministischem Routing. Aufbauend darauf wurde LiveKit als Media-Server und Integrationsschicht für \gls{gls-WebRTC}-Funktionalität und \gls{gls-KI}-Sprachverarbeitung ausgewählt. Damit konnte die Architektur schrittweise von einem experimentellen Setup zu einem belastbaren Prototypen, der mit einem modernen Framework implementiert ist, überführt werden.
+
+\section{Limitationen der Arbeit}
+
+Die Generalisierbarkeit der Ergebnisse wird durch Faktoren eingeschränkt: Die Tests wurden in einer kontrollierten Laborumgebung durchgeführt, die nicht alle Aspekte von Produktivumgebungen im Unternehmenskontext abdeckt. Die Hardware-Ausstattung des Testfeldes ist spezifisch und kann sich von Deployment-Szenarien in anderen Infrastrukturen unterscheiden. Die Abhängigkeit von Cloud-basierten \gls{gls-KI}-\gls{gls-API}s bedeutet, dass die Ergebnisse an die Performance und Verfügbarkeit dieser externen Services gebunden sind \parencite{ReliabilityVirtualizedNetworks,ITU-T-G114}.
+
+\section{Praktische Implikationen und Ausblick}
+
+Für die Praxis zeigen die Ergebnisse, dass containerbasierte Architekturen ein vielversprechender Weg sind, um klassische Telefonsysteme mit modernen \gls{gls-KI}-Komponenten zu verbinden. Die Orientierung an etablierten \gls{gls-VoIP}-Standards und die Nutzung bewährter Open-Source-Komponenten bieten ein solides Fundament für produktive Deployments \parencite{Antonova2025}. Allerdings erfordern produktive Systeme zusätzliche Investitionen in Orchestrierungsmechanismen, Monitoring sowie Sicherheitsma\ss nahmen. Zukünftige Arbeiten könnten sich auf systematische Evaluationen von Edge-Deployments, multimodalen Erweiterungen und domänenspezifischen Testsets konzentrieren. Die Berücksichtigung der objektiven Nutzerwahrnehmung wird als zukünftige Herausforderung identifiziert \parencite{ITU-T-G114}.
+
+\section{Schlussbemerkung}
+
+Diese Arbeit hat die zentrale Forschungsfrage beantwortet: Die stabile Integration eines \gls{gls-LLM} in ein \gls{gls-SIP}-basiertes Telefonsystem, das mit einer containerbasierten Architektur bereitgestellt wird, ist technisch realisierbar und praktisch sinnvoll. Die prototypische Implementierung demonstriert, dass Open-Source-Ansätze nicht nur mit proprietären Plattformen konkurrieren können, sondern sogar strategische Vorteile bieten: Vermeidung von Vendor-Lock-in, datenschutzgerechte On-Premise-Varianten und domänenspezifische Anpassbarkeit.
+
+Die gemessenen Leistungsmetriken aus der \gls{gls-SIP}-Evaluation liegen im akzeptablen Bereich für konversative Telefonieanwendungen. Entscheidend ist jedoch die Interpretation: Diese Werte reflektieren nicht technische Grenzen, sondern fundamentale Trade-offs zwischen Modellkomplexität, Latenz und Kosten.
+
+Die identifizierten Limitationen sind transparent dokumentiert und skizzieren einen klaren Pfad für zukünftige Arbeiten. Die prioritären Forschungsrichtungen, wie zum Beispiel die lokale \gls{gls-LLM}-Inferenz, Edge-Deployment oder multimodale Erweiterung, können gezieltere Einblicke in die vielfältigen Themen geben, die sich mit künstlicher Intelligenz und Telefonsystemen beschäftigen.

@@ -1,0 +1,90 @@
+@startuml
+' Polish layout: remove inline arrow labels, concise notes, legend bottom-right
+skinparam dpi 150
+skinparam nodesep 160
+skinparam ranksep 90
+skinparam linetype ortho
+skinparam ArrowThickness 1.0
+skinparam shadowing false
+skinparam noteFontSize 8
+skinparam defaultFontSize 9
+skinparam noteMargin 8
+skinparam notePadding 6
+skinparam roundcorner 6
+
+top to bottom direction
+
+actor "Support Agent (SIP)" as Agent
+node "SIP / Asterisk" as SIP
+node "Media Bridge\n(LiveKit / Janus / rtpengine)" as LiveKit
+node "VAD (Voice Activity Detection)\n(optional, edge or ASR-side)" as VAD_Node
+cloud "LLM / ASR / TTS\n(PCM16 @16k over TLS)" as LLM
+node "Orchestrator / Bridge" as Orchestrator
+
+database "Audit / Storage" as Store
+actor "Caller / SIP-Client" as Caller
+
+' Main vertical media/signaling flow (no inline labels at all)
+Agent --> SIP
+SIP --> LiveKit
+LiveKit --> LiveKit
+LiveKit --> VAD_Node
+VAD_Node --> LLM
+LLM --> LiveKit
+LiveKit --> SIP
+SIP --> Caller
+
+' Optional direct raw audio path (no VAD) - dashed gray
+LiveKit -[#888888,dashed]-> LLM : optional raw audio (no VAD)
+
+' Control plane (dashed)
+LLM -[#0000FF,dashed]-> Orchestrator
+Orchestrator -[#0000FF,dashed]-> SIP
+
+' Storage arrows: explicit short links from sources
+LLM -[#006400,thickness=2]-> Store : transcripts (anon)
+LiveKit -[#006400]-> Store : metrics
+SIP -[#006400]-> Store : CDRs
+Orchestrator -[#006400]-> Store : audit events
+
+' Consolidated explanatory notes placed far from central lines
+note left of SIP
+  SIP: Session Initiation Protocol (signaling)
+  RTP: Real-time Transport Protocol; SRTP: Secure RTP (encrypted media)
+  ARI = Asterisk REST Interface; AMI = Asterisk Manager Interface
+  SDP offers/answers negotiate codecs (e.g., G.711)
+  NAT/traversal: expect ICE/STUN/TURN for WebRTC; SIP NAT issues require correct external IP/port mapping
+  RTP port ranges must be opened (typical ephemeral range e.g. 10k-20k) and QoS considered
+end note
+
+note left of LiveKit
+  Media bridge (implementations: LiveKit, Janus, rtpengine)
+  Handles transcoding & resampling: G.711@8k ↔ Opus@48k
+  Resampling or format conversion to PCM16@16k is required for ASR
+  Resampling and codec conversion add latency (design estimate: ~10–30 ms per conversion)
+  Requires jitter buffers and packet-loss mitigation for stable audio
+  Handles RTP⇄WebRTC mapping and ICE/STUN/TURN; DTLS for SRTP keying
+  Note: media flows are bidirectional (duplex RTP)
+end note
+
+note right of LLM
+  LLM = Large Language Model; ASR = Automatic Speech Recognition; TTS = Text-to-Speech
+  Model audio: PCM16, 16 kHz, 16-bit mono (preferred)
+  Transport: WebSocket / HTTPS over TLS
+  ASR/LLM streaming: audio chunking/streaming reduces apparent latency but adds design complexity
+  Inference latency (model + streaming) often dominates E2E delay; measure per-model and tune chunk size
+end note
+
+note left of Store
+  Store: transcripts (anonymized), metrics, CDRs (Call Detail Records)
+  Implement retention, redaction and access controls; document DPA (Data Processing Agreement)
+  Apply pseudonymization and limit retention to the minimum required by policy/law
+end note
+
+' Legend bottom (center)
+note bottom
+  Legend: solid=media/data; dashed blue=control/API;
+  dashed gray=optional (VAD); green=storage
+end note
+
+@enduml

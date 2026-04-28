@@ -1,0 +1,225 @@
+\chapter{Implementierung}
+\label{chap:implementierung}
+
+\noindent In diesem Kapitel wird die technische Implementierung des prototypischen Systems detailliert dargelegt. Dabei werden die gewählten Technologien, die Konfigurationsdetails sowie die iterativen Entwicklungsentscheidungen beschrieben.
+
+% Transparenz-Hinweis zur Nutzung von KI-Werkzeugen
+\noindent\textit{Hinweis (Transparenz): Zur Unterstützung wurden GitHub Copilot für Implementierungszwecke und Fehlerbehebung eingesetzt. Die Nutzung erfolgte über die für Studierende der HTWK kostenlos verfügbare Lizenz.}
+
+\section{Entwicklungs- und Testumgebung}
+
+Die Implementierung erfolgte auf einer dedizierten Entwicklungsumgebung mit folgenden Spezifikationen:
+
+\begin{table}[htbp]
+\centering
+\caption{Hardware- und Software-Spezifikationen der Entwicklungsumgebung}
+\label{tab:dev-environment}
+\begin{tabular}{ll}
+\toprule
+\textbf{Kategorie} & \textbf{Spezifikation} \\
+\midrule
+\multicolumn{2}{l}{\textit{Hardware}} \\
+Prozessor & Intel Core i9-9900K @ 3.6 GHz (16 logische CPUs) \\
+Arbeitsspeicher & 16 GB DDR4 RAM \\
+\midrule
+\multicolumn{2}{l}{\textit{Software}} \\
+Betriebssystem & Windows 11 Pro 64-bit \\
+Entwicklungsumgebung & JetBrains WebStorm 2025.3.2 \\
+Container-Runtime & Docker Desktop 4.26.1 \\
+Node.js & v20.11.0 LTS \\
+Python & v3.12.1 \\
+\midrule
+\bottomrule
+\end{tabular}
+\end{table}
+\section{Technologien und Frameworks}
+
+Das hier entwickelte prototypische System nutzt eine spezialisierte Kombination eines modernen Frameworks namens LiveKit für \gls{gls-KI}-basierte Sprachverarbeitung, die in fünf eng integrierten Mikroservices, die mit Docker organisiert sind, implementiert ist. Diese Architektur ermöglicht Unabhängigkeit bei der Skalierung und Wartung, da jeder Service eine spezifische Aufgabe erfüllt und über standardisierte Protokolle miteinander kommuniziert. Für detaillierte Informationen zu Architekturen siehe Kapitel \ref{chap:architektur}.
+
+\subsection{Service-Architektur und Orchestrierung}
+Die Infrastruktur wird über Docker-Compose in einem isolierten Bridge-Netz orchestriert. Das ist optimal für Entwicklung und Single-Host-Deployments, weil mehrere Container mit minimaler Konfiguration verbunden werden. Fünf Dienste arbeiten zusammen, um das System zu komplettieren. Der \textbf{{LiveKit}- Server} als zentraler \gls{gls-WebRTC}-Media-Server, der Raumerstellung verwaltet und Audioströme verarbeitet. Die \textbf{{LiveKit} \gls{gls-SIP}-Bridge} dient als Gateway zwischen klassischem \gls{gls-SIP} und \gls{gls-WebRTC}. \textbf{Asterisk} fungiert als ausgereifte Open-Source-\gls{gls-PBX} und übernimmt daher klassische Funktionen der \gls{gls-SIP}-Telefonie. \textbf{Redis} ist die Instanz, die für die Session-State-Verwaltung und Anrufmetadaten zuständig ist, damit \gls{gls-SIP}-Bridge und Asterisk konsistent bleiben. Der \textbf{Python Agent Worker} nutzt das LiveKit Agents \gls{gls-SDK}, um Room-Events zu verarbeiten, eine \gls{gls-VAD} vorzuschalten und die \gls{gls-KI}-Pipeline samt Metrik-Logging zu orchestrieren. Die Architektur verteilt Aufgaben auf die einzelnen spezialisierten Dienste, anstatt sie zu zentralisieren, und erhöht so die Fehlertoleranz und Wiederverwendbarkeit.
+
+\subsection{Paketmanagement und Paketabhängigkeiten}
+
+Das System nutzt zwei separate Dependency-Management-Systeme für Frontend und Backend.
+
+\textbf{Frontend-Abhängigkeiten (npm):}\\
+Die \texttt{package.json} definiert alle JavaScript/TypeScript-Abhängigkeiten für das Next.js-Frontend. Die Kern-Abhängigkeiten sind: \texttt{@livekit/components-react} (v2.0.0) für vorgefertigte React-Komponenten zur \gls{gls-WebRTC}-Integration, \texttt{livekit-client} (v2.0.0) als Low-Level-\gls{gls-WebRTC}-Client-Bibliothek, \texttt{livekit-server-sdk} (v2.0.0) für serverseitige Token-Signierung, \texttt{next} (v14.0.0) als React-Framework mit Server-Side-Rendering, \texttt{react} und \texttt{react-dom} (v18.2.0) als \gls{gls-UI}-Bibliotheken. Die Installation erfolgt via \texttt{npm install}, wodurch ein \texttt{node\_modules}-Verzeichnis mit allen transitiven Abhängigkeiten erstellt wird.
+\clearpage
+\textbf{Backend-Abhängigkeiten (Python):}\\
+Die \texttt{requirements.txt} spezifiziert Python-Pakete für den Agent Worker. Kritische Abhängigkeiten sind: \texttt{livekit} (>=0.11.0) als Python-Client für LiveKit, \texttt{livekit-agents} (>=0.8.0) als High-Level-Framework für Sprachagenten, \texttt{livekit-plugins-openai} (>=0.6.0) für OpenAI-\gls{gls-API}-Integration, \texttt{livekit-plugins-silero} (>=0.6.0) für lokale \gls{gls-VAD}, \texttt{python-dotenv} (>=1.0.0) zum Laden von Umgebungsvariablen sowie \texttt{requests} (>=2.31.0) und \texttt{PyJWT} (>=2.8.0) für \gls{gls-HTTP}-Requests und \gls{gls-JWT}-Handling. Die Installation erfolgt via \texttt{pip install -r requirements.txt}, was alle Pakete inklusive ihrer transitiven Abhängigkeiten aus dem Python Package Index bezieht.
+
+\subsection{Frontend- und Backend-Implementierung}
+
+Das Web-Frontend wurde mit Next.js 14.0.0 entwickelt und bildet eine React-basierte \gls{gls-SPA}. Die Architektur setzt auf zwei Haupt-Dependency-Gruppen: Erstens \texttt{@livekit/components-react} (v2.0.0), eine von LiveKit gepflegte React-Komponenten-Bibliothek, die WebRTC-Integration abstrahiert und reusable \gls{gls-UI}-Komponenten für Räume, Aufzeichnungen und Teilnehmer anbietet. Zweitens \texttt{livekit-client} (v2.0.0), die zugrunde liegende JavaScript \gls{gls-WebRTC}-Bibliothek, die die Low-Level-Connectivity-Logik und
+Streaming-Protokolle handhabt.
+
+Die Komponenten-Architektur im Frontend folgt dem \textbf{Observer-Pattern}: Komponenten nutzen Hooks wie \texttt{useConnectionState()} und \texttt{useTracks()} aus der LiveKit React-Bibliothek, um sich auf LiveKit Räume zu abonnieren. Bei Änderungen werden die Komponenten automatisch neu gerendert, ohne dass die Applikation aktiv Zustandsabfragen durchführen muss.
+
+Der Token-Abruf implementiert ein klassisches \textbf{Server-Side Token Pattern}: Die Frontend-Komponente \texttt{VoiceAgent} ruft die Next.js \gls{gls-API}-Route \texttt{/api/livekit/token} auf, die auf der Server-Seite läuft. Diese Route nutzt das \texttt{livekit-server-sdk} um einen \gls{gls-JWT} zu signieren, der folgende Informationen enthält: Eine eindeutige Identität der Teilnehmer (z.\,B. ``user''), eine zugeordnete Raum-ID (z.\,B. ``voice-agent-room'') und Berechtigungen (\texttt{canPublish}, \texttt{canSubscribe}, \texttt{canPublishData}). Der signierte Token wird dann an das Frontend zurückgegeben. Dies verhindert, dass das \gls{gls-API}-Geheimnis, welches für die Token-Signierung notwendig ist, im Frontend-Code sichtbar ist.
+
+Das \textbf{Reconnect-Policy-System} ist kritisch für die Stabilität des Systems: Die \texttt{LiveKitRoom}-Komponente wird mit einer benutzerdefinierten \texttt{reconnectPolicy} konfiguriert, die exponentielles Backoff implementiert. Konkret wartet das System beim ersten Verbindungsabbruch 5 Sekunden, beim zweiten 10 Sekunden und beim dritten 15 Sekunden, bevor es nach 3 Versuchen aufgibt. Diese Wartezeiten sind notwendig, weil der Agent Worker Container beim Starten Zeit benötigt, um den LiveKit Raum zu betreten und die \gls{gls-KI}-Pipeline zu initialisieren. Ohne gro\ss zügige Wartezeiten würde der Browser-Client die Verbindung zu früh als gescheitert einstufen. Dieses konkrete Warten bietet einen Kompromiss zwischen Fehlertoleranz und Benutzer-Feedback. Nach 15 Sekunden wird dem Nutzer ein Fehler mitgeteilt, falls die Verbindung nicht hergestellt werden kann.
+
+\noindent Die praktische Implementierung des Server-Side Token Pattern funktioniert wie folgt: Die Frontend-Komponente \texttt{VoiceAgent} wird initial mit dem ``Start''-Button in einer Lade-Phase gerendert. Beim Laden wird ein \texttt{useEffect}-Hook ausgeführt, der einen asynchronen \texttt{fetch()}-Request an die Next.js \gls{gls-API}-Route \texttt{/api/livekit/token} mit \texttt{Content-Type: application/json} und den Payload-Parametern \texttt{roomName} und \texttt{participantName} durchführt. Die serverseitige Route validiert zunächst diese Parameter und extrahiert dann die Umgebungsvariablen \texttt{LIVEKIT\_API\_KEY} und \texttt{LIVEKIT\_API\_SECRET} aus der Systemkonfiguration \texttt{.env.local}. Mit Hilfe des\\ \texttt{livekit-server-sdk}-Moduls wird ein neues \texttt{AccessToken}-Objekt erzeugt mit einer \gls{gls-TTL} von 10 Stunden, und mittels \texttt{at.addGrant()} werden die Berechtigungen gesetzt: \texttt{roomJoin: true} betritt den Raum, \texttt{room: roomName}, sowie die Publikations- und Abonnement-Berechtigungen. Der signierte Token wird dann via \texttt{at.toJwt()} kodiert und zusammen mit der \texttt{LIVEKIT\_URL} \texttt{ws://localhost:7880} lokal oder einer öffentlichen URL in der Produktivumgebung, an das Frontend zurückgegeben. Das Frontend speichert beide Werte im React State und rendert dann die Schaltfläche ``Voice Agent starten''. Erst wenn der Nutzer diese Schaltfläche anklickt, wird der \texttt{connect}-Parameter auf \texttt{true} gesetzt, und die \texttt{LiveKitRoom}-Komponente initiiert die tatsächliche WebSocket-Verbindung mit dem Token und der URL. Bei der Nutzung der \gls{gls-SIP}-Integration ist lediglich das Ausführen des Agent Workers notwendig.
+
+\noindent Die Verbindungserkennung erfolgt mittels des \texttt{useConnectionState()}-Hooks, der die folgende Zustandsmaschine überwacht: Der \texttt{ConnectionState} ist initial \texttt{Disconnected}, wechselt auf \texttt{Connecting}, wenn der Browser versucht, die Verbindung mit dem WebSocket herzustellen, und wird \texttt{Connected}, sobald der Handshake erfolgreich ist. Wenn der Verbindungsabbruch erfolgt, springt der Status zurück auf \texttt{Disconnected}, und die \texttt{reconnectPolicy}-Logik wird aktiviert.\newline Die Policy-Funktion \texttt{nextRetryDelayInMs(context)} wird mit einem Kontextobjekt aufgerufen, das \texttt{context.retryCount} enthält. Wenn \texttt{retryCount < 3}, berechnet die Funktion \texttt{5000 * (retryCount + 1)}, was 5 s (retry 0), 10 s (retry 1), bzw. 15 s (retry 2) ergibt). Wenn der Kontext erfolgreich verbunden wurde, wird die Richtlinie nicht erneut aktiviert. Wenn alle drei Versuche fehlschlagen, gibt die Funktion \texttt{null} zurück, was signalisiert, dass keine weiteren Reconnect-Versuche stattfinden sollen, und eine Fehlerkomponente wird im Frontend angezeigt.
+
+\looseness=-1
+Der Agent Worker ist in Python 3.12 implementiert und nutzt das LiveKit Agents \gls{gls-SDK} (v0.8.0) als Framework für die Sprachverarbeitung. Die \gls{gls-KI}-Pipeline orchestriert vier spezialisierte Komponenten in Echtzeit, die wie folgt zusammenwirken: (1) Es läuft \textbf{Silero \gls{gls-VAD}} lokal ohne \gls{gls-API}-Calls und fungiert als Torwächter, um zu entscheiden, welche Audio-Blöcke Sprache enthalten und daher an Whisper gesendet werden sollten. (2) Die OpenAI Whisper \gls{gls-API} wird nur bei erkannter Sprache aufgerufen, um Audio-Blöcke in Text umzuwandeln. (3)  OpenAI GPT-4o-mini verarbeitet den erkannten Text und generiert eine Antwort, wobei Tokens gestreamt statt gesammelt werden. (4) OpenAI \gls{gls-TTS}  synthetisiert die \gls{gls-LLM}-Antwort in Audio, wobei Streamingmodus verwendet wird, um Latenz zu minimieren.
+
+\textbf{Metrik-Sammlung und Performance-Tracking:}\\
+Der Agent Worker implementiert umfassendes Performance-Tracking über eine \texttt{UsageCollector}-Klasse, die relevante Metriken während eines Anrufs erfasst. Für jeden Anruf werden folgende Daten gesammelt: Anruf-ID und Raumname zur Identifikation, Start- und Endezeitstempel für die Berechnung der Antwortzeiten und der Dauer. Die Sammlung umfasst Teilehmer-IDs aller Gesprächsteilnehmer, \gls{gls-STT} und \gls{gls-STT}-Latenzen pro Äu\ss erung. Au\ss erdem wird die Anzahl generierter Audiodaten sowie ein Verbindungsabbruchsgrund und -Zeitpunkt festgehalten.
+
+Die Metriken werden während des Anrufs in Echtzeit erfasst und bei Anrufende als \gls{gls-JSON}-Zusammenfassung in einen separaten Ordner exportiert. Dies ermöglicht nachträgliche Anrufanalysen zur Optimierung der Pipeline und zur Identifikation von Leistungsengpässen. Die \texttt{summarize()}-Methode berechnet Durchschnittswerte für alle Latenzen und aggregiert Gesamtaudiodaten, was für Kostenkalkulationen und zur Optimierung des Systems essenziell ist. Diese Werte werden in Kapitel \ref{chap:evaluation} nähergehend betrachtet.
+
+\section{Konfiguration und Datenstrukturen}
+
+Das System speichert und verarbeitet Daten über mehrere Schichten hinweg mit standardisierten Strukturen und ist über drei Hauptkonfigurationsdateien definiert: \texttt{docker-compose.yml} für die Orchestrierung, Asterisk-Konfigurationsdateien (\texttt{pjsip.conf}, \texttt{extensions.conf}, \texttt{modules.conf}) für das \gls{gls-SIP}-Routing und
+LiveKit-Konfigurationsdateien (\texttt{livekit-config.yaml}, \texttt{sip-config.yaml}) für den Media-Server und die \gls{gls-SIP}-Bridge.
+
+\subsection{Docker-Compose Konfiguration und Service-Vernetzung}
+
+ Die Datei \texttt{docker-compose.yml} orchestriert die gesamte Infrastruktur mit expliziten IP-Adressen im privaten Netzwerk \texttt{172.20.0.0/16}. Dieses isolierte Netzwerk-Setup wird als Bridge-Netzwerk konfiguriert, was bedeutet, dass alle Container intern über diese vorhersehbaren IP-Adressen miteinander kommunizieren können, während der Host nur die extern weitergeleiteten Ports sieht.
+
+\looseness=-1
+Die Service-zu-Service-Topologie ist wie folgt organisiert:\newline \textbf{Redis} läuft auf \texttt{172.20.0.2:6379} und wird sowohl von der LiveKit \gls{gls-SIP}-Bridge als auch von Asterisk für die Verwaltung des Sitzungsstatus und dessen Persistierung benötigt. \textbf{LiveKit Server} läuft auf \texttt{172.20.0.3} und exponiert intern Port 7880 für WebSocket/\gls{gls-HTTP}, 7881 für \gls{gls-TCP}/\gls{gls-TURN} und 7882 für \gls{gls-UDP}. Extern werden die Ports 50000-50100 für \gls{gls-WebRTC}-Clients weitergeleitet. \textbf{Asterisk \gls{gls-PBX}} läuft auf \texttt{172.20.0.10:5060} für \gls{gls-SIP}-Signalisierung und Ports 10200-10299 werden für \gls{gls-RTP} verwendet. Die \textbf{LiveKit \gls{gls-SIP}-Bridge} läuft auf \texttt{172.20.0.5} und lauscht intern auf Port 5060, wird aber extern auf 5069 weitergeleitet, um einen Portkonflikt mit Asterisk zu vermeiden.
+
+\looseness=-1
+Ein kritischer Aspekt ist die \textbf{Planung des Portnutzungsbereichs}: Asterisk nutzt \gls{gls-RTP}-Ports 10200-10299 für bidirektionales Audio zu externen \gls{gls-SIP}-Providern. Die LiveKit \gls{gls-SIP}-Bridge nutzt Ports 10000-10100 für lokale \gls{gls-RTP}-Kommunikation mit Asterisk und zur Konvertierung nach \gls{gls-WebRTC}. Der LiveKit Server nutzt die Ports 50000-50100 für externe \gls{gls-WebRTC}-Verbindungen vom Browser. Diese sorgfältige Separation verhindert Port-Konflikte.
+
+Die Konfiguration setzt zusätzliche Umgebungsvariablen:\newline \texttt{LIVEKIT\_ANNOUNCE\_IP} teilt dem LiveKit Server mit, unter welcher öffentlichen IP-Adresse er erreichbar ist, damit WebRTC-Clients sich korrekt mit ihm verbinden können. Aus datenschutzrechtlichen Aspekten wurde hier eine Beispiel-IP aus dem RFC 5737 Dokumentations-Bereich verwendet. Für die \gls{gls-SIP}-Bridge werden interne Docker-IP-Adressen \texttt{SIP\_INTERNAL\_IP} verwendet, die vom Bridge-Netzwerk automatisch geroutet werden.
+
+Da das System eingehende \gls{gls-SIP}-Anrufe vom Provider empfangen muss, ist die Konfiguration von \gls{gls-NAT}-Traversierung und Portfreigaben auf dem Router kritisch. Für den prototypischen Betrieb wurden folgende Portfreigaben auf dem Router konfiguriert: Port 5060/\gls{gls-UDP} für \gls{gls-SIP}-Signalisierung wird an die interne Server-IP weitergeleitet, damit \gls{gls-SIP} INVITE-Pakete vom Provider empfangen werden können. Die \gls{gls-RTP}-Port-Range 10200-10299/\gls{gls-UDP} wird ebenfalls weitergeleitet, um bidirektionales Audio zwischen dem Provider und
+Asterisk zu ermöglichen. Zusätzlich werden die Ports 7880/\gls{gls-TCP}, 7881/\gls{gls-TCP} (LiveKit WebSocket/TCP-Fallback) sowie 50000-50100/\gls{gls-UDP} \gls{gls-WebRTC} freigegeben, damit externe \gls{gls-WebRTC}-Clients sich mit dem LiveKit Server verbinden können. Ohne diese Portfreigaben würde die Firewall des Routers eingehende Verbindungen blockieren, was dazu führen würde, dass Anrufe vom Provider nicht ankommen oder das Audio aufgrund fehlender \gls{gls-RTP}-Durchleitung nicht funktioniert.
+
+\subsection{Asterisk-Konfiguration: PJSIP und Anrufweiterleitung}
+
+Asterisk wird über drei Konfigurationsdateien gesteuert, die im Container unter \texttt{/etc/asterisk/} bereitgestellt werden:
+
+\textbf{Transport und Trunk-Definition:} (\texttt{pjsip.conf})\\
+Die Datei definiert zunächst einen \gls{gls-UDP}-Transport (\texttt{[transport-udp]}) auf Port 5060 mit explizit konfigurierten externen IP-Adressen. Dies sind die\\ (\texttt{external\_media\_address}) und die (\texttt{external\_signaling\_address}), wobei beide auf die externe IP-Adresse des Server-Hosts zeigen müssen. Dies ist auf das Single-Host-Szenario mit nur einer öffentlichen IP-Adresse zurückzuführen.
+
+Der \gls{gls-SIP}-Trunk ist als Registrierung (\texttt{['Provider-Name']}) konfiguriert. Es muss sich beim Provider-Server (\texttt{sip:sip.provider.de}) unter einem Benutzernamen\\ (\texttt{sipuser\_xxxxx\_00}), über die Digest-Zugriffsauthentifizierung, angemeldet werden. Diese Zugangsdaten sind je nach Provider unterschiedlich und müssen mit dem entsprechenden Konto übereinstimmen. Aus Gründen des Datenschutzes und der Anonymität sind die tatsächlichen Zugangsdaten hier nicht einsehbar.
+
+Ein Endpunkt (\texttt{[provider-endpoint]}) definiert die Behandlung eingehender Anrufe über den Provider: Erlaubte Codecs sind \texttt{ulaw, alaw, Opus}. Der Parameter\\ \texttt{context=from-provider} leitet eingehende Anrufe in den entsprechenden Dialplan-Kontext weiter. Parameter wie \texttt{rewrite\_contact=yes}, \texttt{force\_rport=yes}, und\\ \texttt{rtp\_symmetric=yes} sind \gls{gls-NAT}-Traversierungstechniken, die notwendig sind, wenn der Provider hinter einem Netzwerk, das mit \gls{gls-NAT} konfiguriert ist, liegt. Somit werden Asymmetrien vermieden.
+
+Ein zweiter Endpunkt (\texttt{[livekit]}) ist für die interne Docker-Kommunikation mit der LiveKit \gls{gls-SIP}-Bridge konfiguriert. Dieser Endpunkt hat bewusst keine Authentifizierung, da er nur intern läuft. Die \texttt{media\_address='IP-Adresse'} zeigt auf die Docker-IP des Asterisk-Containers, und der \texttt{contact} zeigt auf die statische IP der LiveKit \gls{gls-SIP}-Bridge (\texttt{172.20.0.5:5060}).
+
+Ein \texttt{['provider-identifizierung']}-Block listet den IP-Adressbereich des Providers (\texttt{'Externe-IP'}) auf. Dies ermöglicht es Asterisk, eingehende \gls{gls-SIP}-INVITE-Pakete vom Provider automatisch dem richtigen Endpunkt (\texttt{'provider-endpunkt'}) zuzuordnen, ohne dass eine explizite Digest-Zugriffsauthentifizierung für jedes Paket nötig ist.
+
+\textbf{Dialplan und Routing:} (\texttt{extensions.conf})\\
+Der Dialplan ist das Herzstück des Routings. Er besteht aus Kontexten, Extensions und Befehlen:
+
+Der Kontext \texttt{['from-provider']} definiert, wie eingehende Anrufe vom Provider behandelt werden. Wenn ein Anruf über den Provider eingeht (identifiziert durch den \texttt{['provider-identifizierung']}-Block), durchläuft er diesen Kontext. Eine spezifische Extension \texttt{+491234567890} repräsentiert die \textbf{\gls{gls-DID}}-Nummer, die dem System beim Provider zugewiesen ist. Der \texttt{Dial()}-Befehl leitet den Anruf weiter: \texttt{Dial(\gls{gls-PJSIP}/\linebreak[0]\$\{CALLERID(num)\}@livekit,120,g)}. Dies bedeutet: "Nutze den PJSIP-Kanal, sende die Anrufer-ID des ursprünglichen Anrufers unverändert, adressiere den Endpunkt 'livekit', warte bis zu 120 Sekunden auf Annahme, und 'g' bedeutet, erlauben sie dem Angerufenen, das Gespräch aufzulegen".
+
+Ein Catch-all-Fallback (\texttt{exten => \_X.,1}) handhabt unerwartete Extensions und routet sie ebenfalls an LiveKit.
+
+
+\textbf{Selective Module Loading:} (\texttt{modules.conf})\\
+Diese Datei definiert, welche Asterisk-Module geladen werden. Die Module\\ (\texttt{res\_pjsip.so}, \texttt{res\_pjsip\_session.so}, \texttt{res\_pjsip\_registrar.so},\\ \texttt{res\_pjsip\_endpoint\_identifier\_ip.so}), sind notwendig, um die moderne \gls{gls-SIP}-Implementierung bereitzustellen. Das Dialplan-Engine-Modul (\texttt{pbx\_config.so}) wird geladen, um die \texttt{extensions.conf} zu parsen.
+
+Die folgenden Codec-Module werden explizit geladen: \texttt{codec\_ulaw.so}, \texttt{codec\_alaw.so},\newline \texttt{codec\_opus.so}. Diese behandeln die Kompression und Dekompression von Audio mit verschiedenen Kodierungsschemata.
+
+Entscheidend ist: \textbf{Audio-Hardware-Module werden explizit NICHT geladen}. \texttt{noload => chan\_alsa.so} deaktiviert die Advanced Linux Sound Architecture, \texttt{noload => chan\_console.so} deaktiviert die Konsolen-Audio. Dies ist notwendig, da das System in einem Docker-Container ohne lokale Audio-Hardware läuft. Stattdessen wird das gesamte Audio über \gls{gls-RTP}/\gls{gls-WebRTC} transportiert.
+
+\subsection{LiveKit-Konfiguration}
+
+Die Datei \textbf{\texttt{livekit-config.yaml}} konfiguriert den LiveKit Server:
+
+\begin{itemize}
+  \item \texttt{port: 7880}: Hauptport für \gls{gls-HTTP}/WebSocket-Verbindungen. Clients (Browser,
+Agent Worker) stellen hier ihre Verbindung her.
+  \item \texttt{bind\_addresses: 0.0.0.0}: Lauscht auf allen Netzwerkschnittstellen des Containers
+  \item \texttt{rtc.port\_range\_start/end: 50000-50100}: \gls{gls-UDP}-Ports für \gls{gls-RTC}-Media (Audio/Video-Streams)
+  \item \texttt{rtc.tcp\_port: 7881}: Fallback-Port für Clients, die über Firewalls nur \gls{gls-TCP} verwenden können
+  \item \texttt{keys: devkey: secret}: Entwicklungs-API-Keys (nicht produktionsgerecht! Produktivumgebungen nutzen starke Keys)
+  \item \texttt{room.auto\_create: true}: Neue Rooms werden automatisch erzeugt, wenn der erste Participant beitritt
+  \item \texttt{room.empty\_timeout: 300}: Räume werden nach 5 Minuten Inaktivität automatisch gelöscht
+  \item \texttt{redis.address: redis:6379}: Verbindung zu Redis für verteilte\newline Sitzungskoordination
+\end{itemize}
+
+\subsection{SIP-Bridge Konfiguration}
+\label{sec:sip-bridge-config}
+
+Die Datei \textbf{\texttt{sip-config.yaml}} konfiguriert die LiveKit \gls{gls-SIP}-Bridge:
+
+\begin{itemize}
+  \item \texttt{ws\_url: ws://livekit:7880}: WebSocket-Verbindung zum LiveKit Server (interner Docker-Name)
+  \item \texttt{api\_key/api\_secret: devkey/secret}: Authentifizierung gegen den LiveKit Server (nicht produktionsgerecht! Produktivumgebungen nutzen starke Keys)
+  \item \texttt{redis.address: redis:6379}: Für Trunk- und Zuteilungsregelung und Persistierung
+  \item \texttt{log\_level: debug}: Ausführliche Protokollierung für Debugging von \gls{gls-SIP}-Problemen
+\end{itemize}
+
+Die LiveKit \gls{gls-SIP}-Bridge wird nicht über statische Konfigurationsdateien eingerichtet, sondern \textbf{programmgesteuert über die LiveKit \gls{gls-API}}. So können Trunks und Dispatch-Rules flexibel zur Laufzeit verwaltet werden. Die Einrichtung erfolgt über ein Python-Setup-Skript (\texttt{setup\_sip\_bridge\_v2.py}), das das \texttt{livekit-api} \gls{gls-SDK} verwendet.
+\clearpage
+\textbf{Inbound-Trunk-Registrierung:}\\
+Ein \textbf{Inbound-Trunk} definiert, wie die \gls{gls-SIP}-Bridge eingehende Anrufe vom Provider empfängt. Das Setup-Skript erstellt einen Trunk mit folgenden Parametern: \texttt{name} (Identifikation, z.\,B. ``Plusnet Inbound''), \texttt{numbers} (Liste der \gls{gls-DID},\\ z.\,B.[\texttt{+491234567890}]), \texttt{auth\_username} und \texttt{auth\_password} (Providerzugangsdaten für die \gls{gls-SIP}-Authentication), \texttt{allowed\_addresses} (IP-Whitelist: leer = alle erlaubt) und \texttt{metadata} (JSON-String mit Provider-Informationen).
+
+Die Implementierung nutzt die asynchrone \gls{gls-API}-Methode\\ \texttt{create\_sip\_inbound\_trunk()}, die ein \texttt{SIPInboundTrunkInfo}-Objekt als Parameter akzeptiert. Nach erfolgreicher Registrierung gibt die \gls{gls-API} eine eindeutige Trunk-ID zurück, die für spätere Referenzierungen verwendet wird.
+
+\textbf{Erstellung der Zuteilungsregeln:}\\
+Eine \textbf{Zuteilungsregel} definiert das Routing: Wohin soll ein eingehender Anruf geleitet werden? Das Setup-Skript erstellt eine Regel vom Typ \texttt{SIPDispatchRuleDirect}, die Anrufe direkt an einen LiveKit-Raum weiterleitet. Der Raumname folgt dem Pattern \texttt{sip-call-\{callID\}}, wobei \texttt{\{callID\}} zur Laufzeit durch eine eindeutige Anruferkennung ersetzt wird.
+
+Die \texttt{create\_sip\_dispatch\_rule()}-Methode akzeptiert ein \texttt{SIPDispatchRule}-Objekt mit einem \texttt{dispatch\_rule\_direct}-Feld, das \texttt{room\_name} und optional einen \texttt{pin} für geschützte Räume enthält. Das prototypische System nutzt keine PIN, da die Authentifizierung über die Zugandsdaten des \gls{gls-SIP}-Trunk erfolgt.
+
+\textbf{Aufräumen und Fehlerbehandlung:}\\
+Das Setup-Skript implementiert eine robuste Fehlerbehandlung: Vor der Erstellung neuer Trunks werden alle existierenden Trunks und Zuteilungsregeln gelöscht\\ (\texttt{cleanup\_existing\_config()}), um Konflikte zu vermeiden. Dies ist notwendig, da die LiveKit \gls{gls-API} keine Duplikaterkennung bietet. Die Cleanup-Funktion listet alle existierenden Ressourcen via \texttt{list\_inbound\_trunk()} und \texttt{list\_dispatch\_rule()} auf und löscht sie mit den entsprechenden \texttt{delete}-Methoden.
+
+Ein Verifikationsschritt (\texttt{verify\_configuration()}) prüft nach dem Setup, ob alle Ressourcen korrekt erstellt sind, und gibt eine Zusammenfassung der aktiven Trunks und Regeln aus. Dies ermöglicht schnelles Debugging bei Konfigurationsproblemen.
+
+\textbf{Praktische Nutzung:}\\
+Das Setup-Skript wird einmalig nach dem Deployment ausgeführt:\newline \texttt{python python/setup\_sip\_bridge\_v2.py}. Es liest Credentials aus Umgebungsvariablen (\texttt{SIP\_PROVIDER\_USERNAME}, \texttt{SIP\_PROVIDER\_PASSWORD}, \texttt{SIP\_DID\_NUMBER}) und konfiguriert die \gls{gls-SIP}-Bridge automatisch. Nach erfolgreichem Setup können eingehende Anrufe auf die konfigurierte \gls{gls-DID} direkt an den Agent Worker weitergeleitet werden, ohne manuelle Eingriffe.
+
+\subsection{Strukturierte Protokollierung und Eventverfolgung}
+
+Alle Dienste schreiben strukturierte Events in \textbf{\gls{gls-NDJSON}}-Format. Jedes Event ist ein separates \gls{gls-JSON}-Objekt auf einer eigenen Zeile:
+
+\begin{center}
+\texttt{\{call\_id:sip-call-1234567890,timestamp:2026-01-16T14:30:45.123Z,service:agent-worker,event-type:stt-transcription,transcript:"Hallo",latency-ms:523}
+\end{center}
+
+Die standardisierten Felder sind:
+
+\begin{itemize}
+  \item \textbf{call\_id}: Eindeutige Identifier für dienstübergreifendes Tracking (z.\,B. \texttt{sip-call-incoming-main-1234567890})
+  \item \textbf{timestamp}: ISO 8601 Format mit Millisekunden-Auflösung
+  \item \textbf{service}: Asterisk, Livekit-sip, Livekit-server, Agent Worker, Frontend
+  \item \textbf{log\_level}: INFO, WARN, ERROR
+  \item \textbf{event\_type}: Klassifizierung: \texttt{room\_joined},
+\texttt{stt\_transcription}, \texttt{llm\_response}, \texttt{tts\_synthesis}, \texttt{call\_ended}, \texttt{api\_error}
+  \item \textbf{metadata}: Event-spezifische Daten
+\end{itemize}
+
+Diese Struktur ermöglicht eine automatisierte Extraktion von wichtigen Metriken. Nachbearbeitungsanalysen der Anrufe können alle Events mit einer bestimmten \texttt{call\_id} sammeln und die gesamte Anrufhistorie mit Zeitstempeln rekonstruieren.
+
+\subsection{Audio-Datenformat und Root Mean Square}
+
+Das System nutzt durchgehend \gls{gls-PCM16} in 16-Bit-Auflösung mit 16 kHz Abtastrate \parencite{rfc3551}. Die Audio-Chunks sind standardisiert auf \textbf{160 Samples}, was exakt 20 Millisekunden Audio pro Chunk entspricht (Berechnung: 160 Samples / 16.000 Hz = 0,01 s).
+
+Für jeden Chunk wird das \textbf{\gls{gls-RMS}}-Level berechnet. Der \gls{gls-RMS}-Wert ist ein Signalkennwert für die Signalstärke und ist mathematisch definiert als $\sqrt{\frac{1}{N}\sum_{i=1}^{N} x_i^2}$, wobei $x_i$ die Abtastwerte des Audiosignals sind. Der \gls{gls-RMS}-Wert wird gegen einen empirisch ermittelten Schwellwert (typischerweise 0,15 auf einer normalisierten Skala von 0,0 bis 1,0) verglichen, um zwischen Sprache und Stille zu unterscheiden \parencite{Czarnecki1992RMS}.
+
+\subsection{Sitzungsverwaltung und Raumlebenszyklus}
+
+LiveKit Räume werden als \gls{gls-JSON}-Objekte mit eindeutigen Identifikatoren verwaltet. Das System erstellt Raäume mit einem vorhersehbaren Muster:\newline \texttt{sip-call-\{dispatchRuleID\}-\{timestamp\}}, wobei \texttt{dispatchRuleID} der Kennung der Zuteilungsregel entspricht (z.\,B. incoming-main) und
+\texttt{timestamp} der Unix-Zeit beim Anrufeingang entspricht.
+
+Jeder Raum enthält genau zwei Teilnehmer: Erstens den Anrufer, identifiziert über seine Anrufer-ID (z.\,B. +491234567890), und zweitens den \textbf{Agent Worker}, identifiziert durch seinen Container-Hostname (z.\,B. livekit-agent-1).
+
+Metadaten werden im Raum als \gls{gls-JSON}-Objekt gespeichert, um späteren Abfragen Kontext zu geben:
+\begin{itemize}
+  \item \textbf{source}: plusnet (extern \gls{gls-SIP}) oder web (intern Browser)
+  \item \textbf{sip\_trunk}: Name der \gls{gls-SIP}-Trunk-Konfiguration
+  \item \textbf{dispatch\_rule\_match}: Welche Zuteilungsregel diesen Anruf weiterleitet (z.\,B. incoming-main)
+  \item \textbf{caller\_id}: Für spätere Ablaufverfolgung
+  \item \textbf{did\_dialed}: Die \gls{gls-DID}-Nummer, die der Anrufer gewählt hat
+  \item \textbf{join\_timestamp}: Zeit nach ISO 8601 des Raumbeitritts
+\end{itemize}
+
+Diese Metadaten sind essenziell für Compliance (Rechnung, Auditierung), Debugging (Rekonstruktion von Problemen) und
+Reporting (Anrufhistorie).
+
+\section{Zusammenfassung und Deployment}
+
+Die Implementierung des prototypischen Systems umfasst fünf spezialisierte Komponenten (LiveKit Server, LiveKit \gls{gls-SIP}-Bridge, Asterisk, Redis, Agent Worker). Sie stellt ein Next.js-Frontend mit \gls{gls-WebRTC}-Integration bereit und enthält umfassende Konfigurationsdateien für \gls{gls-SIP}-Routing, Medienserver und Sitzungsverwaltung. Die Abhängigkeiten werden über npm (\texttt{package.json}) für das Frontend und pip (\texttt{requirements.txt}) für den Backend-Agent verwaltet. Die \gls{gls-SIP}-Bridge-Konfiguration erfolgt über ein Python-Skript, das die LiveKit \gls{gls-API} für die Registrierung von Trunks und die Einrichtung von Zuteilungsregeln verwendet. Die Metrikverfolgung über die \texttt{UsageCollector}-Klasse ermöglicht Metrikanalysen zur Performance-Optimierung des Systems.
+
+Detaillierte Anweisungen zur Installation, Konfiguration und Nutzung des Systems befinden sich im Anhang~\ref{ch:anhang-deployment}. Dort sind vollständige Befehle für die Installation der Abhängigkeiten, das Starten der Docker Container, das \gls{gls-SIP}-Bridge-Setup sowie Hinweise für auftretende Probleme dokumentiert.

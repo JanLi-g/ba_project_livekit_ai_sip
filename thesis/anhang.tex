@@ -1,0 +1,431 @@
+% ============================================================================
+% ANHANG - Zusätzliche Dokumentation und Deployment-Anleitung
+% ============================================================================
+% Die \appendix Direktive in main.tex führt dazu, dass alle \chapter{} hier
+% automatisch mit Buchstaben (A, B, C, ...) statt Nummern nummeriert werden.
+
+\chapter{Use-Case: Hotline}
+\thispagestyle{scrheadings}
+\markboth{ANHANG}{ANHANG}
+\label{ch:anhang-usecase}
+
+Dieses Kapitel illustriert beispielhaft eine praktische Anwendung anhand eines praxisrelevanten Use-Cases.
+
+\paragraph{Bezeichnung:}
+Automatisierte Hotline mit \gls{gls-KI}-basierter Vorbearbeitung.
+
+\paragraph{Beschreibung:}
+Eingehende Anrufe werden automatisiert angenommen, transkribiert und durch ein \gls{gls-LLM} vorbearbeitet. Bei Bedarf erfolgt eine Eskalation an menschliche Agenten.
+
+\paragraph{Akteure:}
+An diesem Use-Case sind drei Parteien beteiligt: Der \textbf{Anrufer}, der sich extern über ein \gls{gls-SIP}-Client oder das Public Switched Telephone Network, das klassische öffentliche Telefonnetz, verbindet. Das \textbf{System}, das aus einem \gls{gls-SIP}-Gateway, eine Schnittstelle zur Medienübertragung, einer Speech-To-Text Komponente und dem \gls{gls-LLM} und Ticket-System besteht, sowie ein menschlicher \textbf{Support-Agent}, der bei komplexen Anfragen zur Eskalation bereitsteht.
+
+\paragraph{Vorbedingungen:}
+Um einen erfolgreichen Ablauf zu gewährleisten müssen mehrere Voraussetzungen erfüllt sein. Die \gls{gls-SIP}-Infrastruktur muss erreichbar und nach RFC 3261 konform konfiguriert sein. Der \gls{gls-LLM}-Service sollte verfügbar sein und
+über konfigurierte Richtlinien zur Erkennung von Benutzerabsichten, verfügen. Au\ss erdem muss die Ticket-Datenbank erreichbar sein und die Agent-Authentifizierung über einen Identity-Service möglich sein.
+
+\paragraph{Hauptablauf:}
+Der typische Ablauf beginnt mit der \textbf{Anruf-Annahme}, bei der sich der Anrufer mit dem System verbindet. Das \gls{gls-SIP}-Gateway empfängt das INVITE und erstellt eine neue Room-Session (\textbf{Session-Erstellung}). Das System sendet anschlie\ss end eine automatische \textbf{Begrü\ss ungs-Ansage} via \gls{gls-TTS}. Während des Gesprächs transkribiert \gls{gls-ASR} die Sprache des Anrufers in Echtzeit (\textbf{Transkription}), woraufhin das \gls{gls-LLM} das Transkript analysiert und die Benutzerabsicht erkennt (\textbf{Intent-Erkennung}, z.\,B. "Technische Unterstützung"). Wichtig ist ebenfalls eine Aufforderung des \gls{gls-KI}-Agenten, sodass der verbundene Anrufer zulassen kann, dass personenbezogene Daten erhoben oder benötigt werden.
+
+In der Phase der \textbf{intelligenten Verarbeitung} wird je nach erkanntem \textbf{Intent} eine von drei Aktionen eingeleitet: Bei einer einfachen Lösung, die mithilfe von Informationsbereitstellung erbracht werden kann, antwortet das \gls{gls-LLM} direkt mit relevanter Information via \gls{gls-TTS}. Alternativ wird das System dazu angeleitet, ein Support-Ticket zu erstellen und speichert das Transkript (Ticket-Erstellung). Bei komplexeren Anfragen wird ein Agent benachrichtigt und der Anrufer zur Warteschlange zur \textbf{Eskalation} weitergeleitet. Zum \textbf{Abschluss} wird das Gespräch entweder beendet oder ein Agent übernimmt, während das Ticket aktualisiert wird.
+
+\paragraph{Alternativer Ablauf:}
+Falls die \gls{gls-ASR} keinen Treffer liefert oder ein Verständnisproblem auftritt, wird ein zweiter Durchgang zur Support-Anfrage eingeleitet. Sollte erneut kein Treffer geliefert werden, wird der Anruf direkt an einen menschlichen Agenten weitergeleitet. Bei einem \gls{gls-LLM}-Timeout von mehr als 10\,s erfolgt eine automatische Eskalation mit entsprechender Ankündigung an den Anrufer. Aus Datenschutzgründen ist bei \gls{gls-DSGVO}-relevanten Verarbeitungen ein Aufzeichnungs-Opt-in vor der eigentlichen Verarbeitung erforderlich.
+
+\paragraph{Erfolgskriterien:}
+Der Ablauf gilt als erfolgreich, wenn der Anrufer eine automatische Begrü\ss ung innerhalb der von \gls{gls-ITU-T} G.114 empfohlenen Latenz empfängt. Das erfasste Transkript muss korrekt dem entsprechenden Ticket zugeordnet werden, während der Intent entweder erfolgreich erkannt wird oder eine Eskalation eingeleitet wird. Im Fall einer Eskalation sollte der menschliche Agent vollständigen Kontext erhalten, inklusive Transkript, erkanntem Intent und
+Ticket-ID.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=1.0\textwidth,height=0.63\textheight,keepaspectratio]{images/use_case_architektur.pdf}
+\caption{Sequenzdiagramm UC-01: Automatisierte Hotline mit \gls{gls-KI}-gestützter Vorbearbeitung (drei Pfade: A) Automatische Lösung,
+B) Ticket-Erstellung, C) Eskalation zu Agent).}
+\label{fig:usecase_sequence}
+\end{figure}
+
+
+\chapter{Deployment und Inbetriebnahme}
+\markboth{ANHANG}{ANHANG}
+\label{ch:anhang-deployment}
+
+Dieses Kapitel beschreibt die vollständige Installation und Inbetriebnahme des Systems zur Reproduzierbarkeit der Implementierung.
+
+\section{Systemvoraussetzungen}
+\label{sec:anhang-systemvoraussetzungen}
+
+Folgende Software muss auf dem Host-System installiert sein:
+
+\begin{itemize}
+  \item \textbf{Node.js:} v20.11.0 LTS oder höher (für Next.js Frontend)
+  \item \textbf{Python:} v3.12.1 oder höher (für Agent Worker)
+   \item \textbf{Docker Desktop:} v4.26.1 oder höher (für Container-Orchestrierung, Entwicklung unter Windows/macOS)
+  \item \textbf{Docker Engine:} 23.x oder höher (für produktives Hosting unter Linux, alternativ zu Docker Desktop)
+  \item \textbf{npm:} v10.0.0 oder höher (Paketmanager für Node.js)
+  \item \textbf{pip:} v23.0.0 oder höher (Paketmanager für Python)
+\end{itemize}
+
+\noindent Hardwareanforderungen:
+\begin{itemize}
+  \item Mindestens 16 GB RAM (empfohlen für parallele Container)
+  \item Mindestens 4 CPU-Kerne (für \gls{gls-VAD} und Audio-Processing)
+  \item Mindestens 10 GB freier Festplattenspeicher
+  \item Stabile Internetverbindung (für OpenAI \gls{gls-API}-Zugriff)
+\end{itemize}
+
+\section{Installation}
+\label{sec:anhang-installation}
+
+\subsection{Schritt 1: Dependencies installieren}
+
+\subsubsection{Frontend-Dependencies (npm):}
+
+\begin{lstlisting}[language=bash,caption={Node.js-Pakete installieren}]
+npm install
+\end{lstlisting}
+
+\noindent Dies installiert alle in \texttt{package.json} definierten Pakete inklusive LiveKit-Komponenten, Next.js, React und TypeScript.
+
+\subsubsection{Backend-Dependencies (Python):}
+
+\begin{lstlisting}[language=bash,caption={Python-Pakete installieren}]
+python -m pip install -r requirements.txt
+\end{lstlisting}
+
+\noindent Dies installiert alle in \texttt{requirements.txt} definierten Pakete inklusive LiveKit Agents \gls{gls-SDK}, OpenAI-Plugins und Silero \gls{gls-VAD}.
+
+\subsection{Schritt 2: Umgebungsvariablen konfigurieren}
+
+Erstellen Sie eine \texttt{.env.local}-Datei im Projekt-Root mit folgenden Variablen:
+
+\begin{lstlisting}[language=bash,caption={Umgebungsvariablen (.env.local)}]
+# LiveKit Server
+LIVEKIT_URL=ws://localhost:7880
+LIVEKIT_API_KEY=<your-api-key>
+LIVEKIT_API_SECRET=<your-api-secret>
+
+# OpenAI API
+OPENAI_API_KEY=sk-<your-openai-api-key>
+
+# SIP Provider Credentials
+SIP_PROVIDER_DOMAIN=<sip-provider-domain>
+SIP_PROVIDER_USERNAME=<sip-username>
+SIP_PROVIDER_PASSWORD=<sip-password>
+SIP_DID_NUMBER=<your-did-number>
+\end{lstlisting}
+
+\textit{Hinweis: Ersetzen Sie die Platzhalter in spitzen Klammern mit Ihren tatsächlichen Werten. Der OpenAI \gls{gls-API}-Key ist unter \url{https://platform.openai.com/api-keys} erhältlich.}
+
+\subsection{Schritt 3: Docker-Container starten}
+
+\begin{lstlisting}[language=bash,caption={Docker-Container im Hintergrund starten}]
+docker-compose up -d
+\end{lstlisting}
+
+\noindent Dies startet fünf Container: LiveKit Server (Port 7880), LiveKit \gls{gls-SIP}-Bridge (Port 5069), Asterisk (Port 5060), Redis (Port 6379) und den internen Docker-Bridge-Netzwerk-Manager. Die Container laufen dauerhaft im Hintergrund (\texttt{-d} Flag).
+
+\subsection{Schritt 4: SIP-Bridge konfigurieren}
+
+Nach dem Start der Container muss die \gls{gls-SIP}-Bridge mit dem Provider-Trunk konfiguriert werden:
+
+\begin{lstlisting}[language=bash,caption={SIP-Trunk und Dispatch-Rules registrieren}]
+python python/setup_sip_bridge_v2.py
+\end{lstlisting}
+
+\noindent Dieses Skript erstellt einen Inbound-Trunk für eingehende Anrufe vom Provider und eine Dispatch-Rule, die Anrufe an den LiveKit-Room \texttt{sip-call-\{callID\}} routet.
+
+\subsection{Schritt 5: Agent Worker starten}
+
+Der Agent Worker muss gestartet werden, um eingehende Anrufe zu verarbeiten:
+
+\begin{lstlisting}[language=bash,caption={Voice Agent Worker starten}]
+python python/agent_worker.py
+\end{lstlisting}
+
+\noindent Der Agent Worker verbindet sich mit dem LiveKit Server und wartet auf eingehende Room-Events. Alle Events und Metriken werden in \texttt{agent\_worker\_debug.log} geschrieben. Lassen Sie dieses Terminal-Fenster offen, solange das System laufen soll.
+
+\subsection{Schritt 6: Frontend starten (optional)}
+
+Für die Web-Benutzeroberfläche starten Sie den Next.js Development Server in einem separaten Terminal:
+\clearpage
+\begin{lstlisting}[language=bash,caption={Next.js Development Server starten}]
+npm run dev
+\end{lstlisting}
+
+\noindent Das Frontend ist danach unter \url{http://localhost:3000} erreichbar und ermöglicht die Verwaltung und Überwachung des Voice Agent Systems.
+
+\section{Tests und Vorbereitung}
+
+\subsection{Container-Status prüfen}
+
+\begin{lstlisting}[language=bash,caption={Status aller Docker-Container anzeigen}]
+docker-compose ps
+\end{lstlisting}
+
+\noindent Alle fünf Container sollten im Status ``Up'' sein.
+
+\subsection{LiveKit-Konnektivität testen}
+
+Öffnen Sie im Browser \url{http://localhost:3000} und klicken Sie auf ``Voice Agent starten''. Die Verbindungsstatusanzeige sollte von ``Getrennt'' über ``Verbindet...'' auf ``Verbunden'' wechseln (grüner Indikator). Dies ist nur notwendig, wenn das System über den Browser verwendet wird.
+
+\subsection{SIP-Telefonie testen}
+
+Rufen Sie die konfigurierte DID-Nummer von einem externen Telefon an. Der Anruf sollte automatisch angenommen werden und der Agent Worker sollte in den Logs ein neues Room-Event anzeigen. Dafür muss der Agent Worker gestartet sein.
+\clearpage
+\section{Logs und Debugging}
+\label{sec:anhang-logs}
+
+\subsection{Container-Logs anzeigen}
+
+\begin{lstlisting}[language=bash,caption={Logs für einzelne Container anzeigen}]
+# LiveKit Server
+docker-compose logs -f livekit
+
+# LiveKit SIP-Bridge
+docker-compose logs -f livekit-sip
+
+# Asterisk
+docker-compose logs -f asterisk
+\end{lstlisting}
+
+\subsection{Agent Worker Logs}
+
+Der Agent Worker schreibt alle Events in \texttt{agent\_worker\_debug.log}:
+
+\begin{lstlisting}[language=bash,caption={Agent Worker Logs in Echtzeit anzeigen}]
+tail -f agent_worker_debug.log
+\end{lstlisting}
+
+\subsection{Mögliche Probleme durch fehlende Konfigurationswerte}
+
+\subsubsection{Problem: \texttt{LIVEKIT\_API\_KEY} ist nicht definiert}
+
+\begin{itemize}
+  \item \textbf{Lösung:} Prüfen Sie, ob \texttt{.env.local} existiert und korrekt formatiert ist (keine Leerzeichen um das ``=''-Zeichen).
+\end{itemize}
+
+\subsubsection{Problem: Eingehende Anrufe kommen nicht an}
+
+\begin{itemize}
+\item \textbf{Lösung:} Prüfen Sie die Router-Portfreigaben (Port 5060/\gls{gls-UDP}, 10200\textendash10299/\gls{gls-UDP})
+  \item Prüfen Sie die \gls{gls-SIP}-Registrierung: \texttt{docker exec asterisk asterisk -rx "pjsip show registrations"}
+\end{itemize}
+
+\subsubsection{Problem: Agent antwortet nicht}
+
+\begin{itemize}
+  \item \textbf{Lösung:} Prüfen Sie den OpenAI \gls{gls-API}-Key in \texttt{.env.local}.
+  \item Prüfen Sie Agent Worker Logs auf Fehler: \texttt{grep ERROR agent\_worker\_debug.log}
+\end{itemize}
+
+\section{System beenden}
+\label{sec:anhang-shutdown}
+
+\begin{lstlisting}[language=bash,caption={Alle Komponenten beenden}]
+# Next.js beenden (Strg+C im Terminal)
+# Agent Worker beenden (Strg+C im Terminal)
+# Docker-Container stoppen
+docker-compose down
+\end{lstlisting}
+
+\chapter{Konfigurationsdateien}
+\markboth{ANHANG}{ANHANG}
+\label{ch:anhang-config}
+
+Dieses Kapitel enthält die vollständigen Konfigurationsdateien des implementierten Systems zur Nachvollziehbarkeit und Reproduzierbarkeit. Standort- und personenbezogene Daten wurden maskiert oder durch Platzhalter ersetzt.
+
+\section{Docker-Compose Orchestrierung}
+\label{sec:anhang-docker-compose}
+
+Die vollständige \texttt{docker-compose.yml} orchestriert alle fünf Mikroservices mit expliziten IP-Adressen und Port-Mappings:
+
+\begin{lstlisting}[language=yaml,caption={docker-compose.yml - Service-Orchestrierung}]
+services:
+  # Asterisk SIP Bridge
+  asterisk:
+    image: andrius/asterisk:latest
+    restart: unless-stopped
+    ports:
+      - "5060:5060/udp"
+      - "10200-10299:10200-10299/udp"
+    volumes:
+      - ./asterisk/pjsip.conf:/etc/asterisk/pjsip.conf:ro
+      - ./asterisk/extensions.conf:/etc/asterisk/extensions.conf:ro
+      - ./asterisk/modules.conf:/etc/asterisk/modules.conf:ro
+    networks:
+      livekit-network:
+        ipv4_address: 172.20.0.10
+
+  # Redis - Session State
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    networks:
+      livekit-network:
+        ipv4_address: 172.20.0.2
+
+  # LiveKit Server
+  livekit:
+    image: livekit/livekit-server:latest
+    command: --config /etc/livekit-config.yaml
+    restart: unless-stopped
+    ports:
+      - "7880:7880"
+      - "7881:7881"
+      - "7882:7882/udp"
+      - "50000-50100:50000-50100/udp"
+    environment:
+      LIVEKIT_KEYS: "<api-key>: <api-secret>"
+    volumes:
+      - ./livekit-config.yaml:/etc/livekit-config.yaml:ro
+    networks:
+      livekit-network:
+        ipv4_address: 172.20.0.3
+
+  # LiveKit SIP Bridge
+  livekit-sip:
+    image: livekit/sip:latest
+    restart: unless-stopped
+    ports:
+      - "5069:5060/udp"
+      - "10000-10100:10000-10100/udp"
+    environment:
+      - LIVEKIT_URL=ws://livekit:7880
+      - LIVEKIT_API_KEY=<api-key>
+      - LIVEKIT_API_SECRET=<api-secret>
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    volumes:
+      - ./sip-config.yaml:/sip/config.yaml:ro
+    networks:
+      livekit-network:
+        ipv4_address: 172.20.0.5
+
+networks:
+  livekit-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+\end{lstlisting}
+
+\section{Asterisk-PBX Konfiguration}
+\label{sec:anhang-asterisk}
+Im folgenden werden die Konfigurationsdateien für die Asterisk-\gls{gls-PBX} vorgestellt.
+\subsection{PJSIP Transport und Trunks}
+
+Die \texttt{pjsip.conf} definiert \gls{gls-SIP}-Transports, Provider-Registrierung und Endpoints:
+
+\begin{lstlisting}[language=yaml,caption={pjsip.conf - SIP-Konfiguration}]
+[transport-udp]
+type=transport
+protocol=udp
+bind=0.0.0.0:5060
+external_media_address=<external-ip>
+external_signaling_address=<external-ip>
+
+[provider]
+type=registration
+outbound_auth=provider-auth
+server_uri=sip:<sip-provider-domain>
+client_uri=sip:<sip-username>@<sip-provider-domain>
+retry_interval=60
+
+[provider-auth]
+type=auth
+auth_type=userpass
+username=<sip-username>
+password=<sip-password>
+
+[provider-endpoint]
+type=endpoint
+context=from-provider
+disallow=all
+allow=ulaw,alaw
+rtp_symmetric=yes
+force_rport=yes
+rewrite_contact=yes
+from_user=<sip-username>
+outbound_auth=provider-auth
+
+[provider-endpoint]
+type=aor
+contact=sip:<sip-provider-domain>
+
+[provider-endpoint]
+type=identify
+endpoint=provider-endpoint
+match=<sip-provider-domain>
+\end{lstlisting}
+
+\subsection{Dialplan und Call-Routing}
+
+Die \texttt{extensions.conf} enthält die Routing-Logik für eingehende Anrufe:
+
+\begin{lstlisting}[language=ini,caption={extensions.conf - Dialplan}]
+[from-provider]
+exten => <your-did-number>,1,NoOp(Incoming call from SIP Provider)
+ same => n,Answer()
+ same => n,Stasis(livekit-bridge)
+ same => n,Hangup()
+\end{lstlisting}
+
+\subsection{Modul-Loading}
+
+Die \texttt{modules.conf} definiert, welche Asterisk-Module geladen werden:
+
+\begin{lstlisting}[language=ini,caption={modules.conf - Modulkonfiguration}]
+[modules]
+autoload=yes
+
+noload => chan_sip.so
+load => res_pjsip.so
+load => res_pjsip_session.so
+load => res_pjsip_transport_websocket.so
+load => res_ari.so
+load => res_stasis.so
+\end{lstlisting}
+
+\section{LiveKit Server Konfiguration}
+\label{sec:anhang-livekit}
+Im folgenden werden die Konfigurationsdateien für die LiveKit Komponenten vorgestellt.
+\subsection{Media Server}
+
+Die \texttt{livekit-config.yaml} konfiguriert den zentralen \gls{gls-WebRTC} Media Server:
+
+\begin{lstlisting}[language=yaml,caption={livekit-config.yaml - Media Server}]
+port: 7880
+rtc:
+  port_range_start: 50000
+  port_range_end: 50100
+  use_external_ip: true
+keys:
+  <api-key>: <api-secret>
+room:
+  auto_create: true
+  empty_timeout: 300
+  max_participants: 10
+\end{lstlisting}
+
+\subsection{SIP Bridge}
+
+Die \texttt{sip-config.yaml} konfiguriert das \gls{gls-SIP}-zu-\gls{gls-WebRTC} Gateway:
+
+\begin{lstlisting}[language=yaml,caption={sip-config.yaml - SIP Bridge}]
+logging:
+  level: debug
+sip:
+  port: 5060
+  local_net:
+    - 172.20.0.0/16
+redis:
+  address: redis:6379
+livekit:
+  url: ws://livekit:7880
+  api_key: <api-key>
+  api_secret: <api-secret>
+\end{lstlisting}
+
+

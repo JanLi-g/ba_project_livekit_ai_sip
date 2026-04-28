@@ -1,0 +1,57 @@
+@startuml UC-01-Hotline-Sequence
+!theme plain
+skinparam backgroundColor #FEFEFE
+skinparam Padding 8
+
+actor User as user
+participant "SIP Gateway" as sip
+participant "Voice Agent\n(STT/LLM/TTS)" as agent
+participant "Ticket System" as ticket
+participant "Human Agent" as human
+
+autonumber
+
+user -> sip: SIP INVITE
+activate sip
+sip -> agent: Session erstellen
+activate agent
+
+agent -> user: Begrüßung (TTS)
+user -> agent: Spracheingabe
+
+agent -> agent: STT → LLM\n(Intent-Erkennung)
+
+alt [Automatische Lösung]
+    agent -> user: Antwort (TTS)
+    user -> sip: BYE
+    deactivate agent
+    deactivate sip
+
+else [Ticket erstellen]
+    agent -> ticket: Ticket anlegen
+    activate ticket
+    ticket -> agent: Ticket-ID
+    deactivate ticket
+    agent -> user: Bestätigung
+    user -> sip: BYE
+    deactivate agent
+    deactivate sip
+
+else [Eskalation]
+    agent -> human: Kontext senden
+    activate human
+    agent -> ticket: Ticket anlegen
+    activate ticket
+    deactivate ticket
+    agent -> user: "Verbinde mit Agent..."
+    deactivate agent
+    user -> human: Audio-Transfer
+    human -> user: Gespräch
+    user -> sip: BYE
+    deactivate human
+    deactivate sip
+
+end
+
+@enduml
+

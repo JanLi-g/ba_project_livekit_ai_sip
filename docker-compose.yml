@@ -1,0 +1,114 @@
+services:
+  # Asterisk SIP Bridge - Verbindet Plusnet mit LiveKit
+  asterisk:
+    image: andrius/asterisk:latest
+    restart: unless-stopped
+    ports:
+      - "5060:5060/udp"  # SIP Port (Asterisk geändert von 5061 auf 5060)
+      - "10200-10299:10200-10299/udp"  # RTP Ports
+    volumes:
+      - ./asterisk/pjsip.conf:/etc/asterisk/pjsip.conf:ro
+      - ./asterisk/extensions.conf:/etc/asterisk/extensions.conf:ro
+      - ./asterisk/asterisk.conf:/etc/asterisk/asterisk.conf:ro
+      - ./asterisk/logger.conf:/etc/asterisk/logger.conf:ro
+      - ./asterisk/modules.conf:/etc/asterisk/modules.conf:ro
+    networks:
+      livekit-network:
+        ipv4_address: 172.20.0.10
+    environment:
+      - ASTERISK_UID=1000
+      - ASTERISK_GID=1000
+    healthcheck:
+      test: ["CMD", "asterisk", "-rx", "core show version"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    depends_on:
+      livekit-sip:
+        condition: service_started
+
+  # Redis - Required for SIP state management
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    networks:
+      livekit-network:
+        ipv4_address: 172.20.0.2
+
+  # LiveKit Server
+  livekit:
+    image: livekit/livekit-server:latest
+    command: --config /etc/livekit-config.yaml
+    restart: unless-stopped
+    env_file:
+      - .env.local
+    ports:
+      - "7880:7880"  # HTTP/WebSocket
+      - "7881:7881"  # TURN/STUN TCP
+      - "7882:7882/udp"  # RTP/RTCP
+      - "50000-50100:50000-50100/udp"  # RTC Port Range
+    volumes:
+      - ./livekit-data:/data
+      - ./livekit-config.yaml:/etc/livekit-config.yaml:ro
+    networks:
+      livekit-network:
+        ipv4_address: 172.20.0.3
+    depends_on:
+      redis:
+        condition: service_started
+
+  # LiveKit SIP Bridge
+  livekit-sip:
+    image: livekit/sip:latest
+    restart: unless-stopped
+    env_file:
+      - .env.local
+    ports:
+      - "5061:5060/udp"  # SIP Port - 5061 auf Host, 5060 im Container
+      - "10000-10100:10000-10100/udp"  # RTP Ports für SIP
+    volumes:
+      - ./sip-config.yaml:/sip/config.yaml:ro
+    depends_on:
+      - livekit
+      - redis
+    networks:
+      livekit-network:
+        ipv4_address: 172.20.0.5
+
+  # Voice Agent Worker - Python Agent für eingehende SIP-Calls
+  voice-agent:
+    build:
+      context: .
+      dockerfile: Dockerfile.agent
+    restart: unless-stopped
+    env_file:
+      - .env.local
+    volumes:
+      - ./python:/app/python
+      - /app/python/__pycache__
+    depends_on:
+      livekit:
+        condition: service_started
+      redis:
+        condition: service_started
+      livekit-sip:
+        condition: service_started
+    networks:
+      livekit-network:
+        ipv4_address: 172.20.0.20
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+networks:
+  livekit-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+          gateway: 172.20.0.1

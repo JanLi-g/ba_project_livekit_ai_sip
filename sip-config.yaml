@@ -1,0 +1,15 @@
+# LiveKit SIP Server Configuration
+log_level: debug
+
+# Redis Configuration (required for SIP state)
+redis:
+  address: redis:6379
+
+# LiveKit Connection - WICHTIG: ws:// für WebSocket
+api_key: YOUR_LIVEKIT_API_KEY_HERE
+api_secret: YOUR_LIVEKIT_API_SECRET_HERE
+ws_url: ws://livekit:7880
+
+# SIP Konfiguration wird jetzt über die API gemacht, nicht hier
+# Trunks und Dispatch Rules werden programmatisch erstellt
+

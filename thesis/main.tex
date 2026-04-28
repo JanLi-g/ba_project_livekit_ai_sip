@@ -1,0 +1,226 @@
+% Bachelorarbeit – KOMA-Script Vorlage (DE)
+\documentclass[12pt,a4paper,oneside,bibliography=totoc,listof=totoc,shortlabels]{scrreprt}
+
+% Sprache, Kodierung, Typografie
+\usepackage[T1]{fontenc}
+% Sicherstellen, dass standardmä\ ssig Serifenschrift genutzt wird
+\renewcommand{\familydefault}{\rmdefault}
+\usepackage[ngerman]{babel}
+\usepackage{csquotes}
+\usepackage{microtype}
+\usepackage[document]{ragged2e}  % Bessere Hyphenation-Kontrolle für problematische Absätze
+
+% Automatic formatting improvements
+% Hyphenation hints für lange deutsche/englische Wörter
+\hyphenation{
+  Vir-tu-a-li-sie-rung
+  Kom-mu-ni-ka-tions-sys-te-me
+  Sprach-ver-ar-bei-tung
+  Netz-werk-ver-bin-dung
+  Im-ple-men-tie-rung
+  Tele-fo-nie-sys-tem
+  Spra-cher-ken-nung
+  Text-zu-Spra-che
+}
+% End of automatic improvements
+
+% Layout & Links
+\usepackage{geometry}
+\geometry{a4paper, left=30mm, right=25mm, top=25mm, bottom=30mm}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{booktabs}
+\usepackage{siunitx}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{listings}
+\usepackage{longtable}
+\usepackage{float}
+\usepackage{placeins}
+% Zusatz für Tabellenlayouts in Kapitel 4
+\usepackage{array}
+\usepackage{tabularx}
+
+% Globale Caption-Position: Tabellen oben, Abbildungen unten
+\captionsetup[table]{position=top}
+\captionsetup[figure]{position=bottom}
+
+% KOMA: Serifenschrift für Überschriften und standardisierte Captions
+\setkomafont{disposition}{\normalfont\bfseries\sffamily}
+\setkomafont{caption}{\normalfont\small}
+\setkomafont{captionlabel}{\bfseries}
+
+% Zusätzliche KOMA-Optimierungen
+\KOMAoptions{
+  toc=listof,
+  listof=totoc,
+  captions=tableheading
+}
+
+% Code-Snippets
+\lstset{
+  basicstyle=\ttfamily\small,
+  columns=fullflexible,
+  breaklines=true,
+  keepspaces=true,
+  showstringspaces=false,
+  upquote=true,
+  frame=lines,
+  aboveskip=12pt,
+  belowskip=12pt,
+  xleftmargin=10pt,
+  numbers=none
+}
+
+% Definition von YAML Syntax-Highlighting
+\lstdefinelanguage{yaml}{
+  keywords={true,false,null,y,n},
+  keywordstyle=\color{blue}\bfseries,
+  basicstyle=\ttfamily\small,
+  sensitive=false,
+  comment=[l]{\#},
+  commentstyle=\color{gray}\ttfamily,
+  stringstyle=\color{red}\ttfamily,
+  morestring=[b]',
+  morestring=[b]",
+}
+
+% Definition von INI Syntax
+\lstdefinelanguage{ini}{
+  basicstyle=\ttfamily\small,
+  columns=fullflexible,
+  morecomment=[s][\color{gray}]{[}{]},
+  morecomment=[l]{\#},
+  morecomment=[l]{;},
+  commentstyle=\color{gray}\ttfamily,
+  stringstyle=\color{red}\ttfamily,
+  keywordstyle=\color{blue}\bfseries,
+}
+
+\lstalias{bash}{sh}
+
+% Kopf- und Fu\ sszeilen
+\usepackage{scrlayer-scrpage}
+\clearpairofpagestyles
+\pagestyle{scrheadings}
+\automark{chapter}
+\ihead{\small\leftmark}
+\ohead{\small\thepage}
+\KOMAoptions{headsepline=0.4pt}
+
+% Abstände und Formatierung
+\usepackage{setspace}
+\onehalfspacing
+
+\setlength{\parskip}{6pt plus2pt minus1pt}
+\setlength{\parindent}{0pt}
+
+% Listen
+\usepackage[shortlabels]{enumitem}
+\setlist{
+  before=\vspace{6pt},
+  after=\vspace{6pt},
+  nosep,
+  leftmargin=25pt,
+  labelsep=8pt
+}
+\setlist[itemize,1]{itemsep=4pt}
+\setlist[enumerate,1]{itemsep=4pt}
+
+% Hyperref
+\usepackage{hyperref}
+\hypersetup{
+  colorlinks=true,
+  linkcolor=black,
+  citecolor=teal,
+  urlcolor=teal,
+  bookmarksnumbered=true
+}
+
+% Glossar und Abkürzungen
+\usepackage[toc]{glossaries}
+
+% Definiere Glossary-Typ für alle Einträge (Akronyme + Fachwörter zusammen)
+\newglossary[glg]{fachwort}{gls}{glo}{Glossar}
+
+% Verwende list-Stil für bessere Trennung der Einträge mit Zeilenumbrüchen
+\setglossarystyle{altlist}
+
+\makeglossaries
+
+% Glossareinträge
+\input{glossary}
+
+% Literatur
+\usepackage[
+  backend=biber,
+  style=alphabetic,
+  sorting=nyt,
+  maxcitenames=2,
+  mincitenames=1,
+  maxbibnames=99
+]{biblatex}
+\addbibresource{references.bib}
+
+% Metadaten
+\newcommand{\ThesisTitle}{Machbarkeitsstudie zur Integration von Large Language Models in Container-basierte SIP-Telefonsysteme}
+\newcommand{\ThesisAuthor}{Jan Liebeck}
+\newcommand{\ThesisMatrikel}{75502}
+\newcommand{\ThesisSupervisorCompany}{B.Sc. Felix Piasta (stack1 GmbH)}
+\newcommand{\ThesisSupervisorUniversity}{Prof. Dr.-Ing. Robert Müller (HTWK Leipzig)}
+\newcommand{\ThesisDate}{26.01.2026}
+
+% Widow/Orphan-Kontrolle
+\widowpenalty=10000
+\clubpenalty=10000
+\hyphenpenalty=5000
+
+\begin{document}
+
+\input{titlepage}
+
+\pagenumbering{Roman}
+\pagestyle{scrheadings}
+
+\clearpage
+\manualmark
+\markboth{Abstrakt}{Abstrakt}
+\input{abstract}
+
+\clearpage
+\manualmark
+\markboth{Abstract}{Abstract}
+\input{abstract_eng}
+
+\clearpage
+\automark{chapter}
+
+\ihead{\small\leftmark}
+\tableofcontents
+\addtocontents{toc}{\protect\thispagestyle{scrheadings}}
+\listoftables
+\addtocontents{lot}{\protect\thispagestyle{scrheadings}}
+\printglossary[type=fachwort, title={Glossar}, nonumberlist]
+
+\clearpage
+\pagenumbering{arabic}
+
+\input{01_einleitung}
+\input{02_grundlagen}
+\input{03_anforderungen}
+\input{04_architektur}
+\input{05_marktanalyse}
+\input{06_implementierung}
+\input{07_evaluation}
+\input{08_diskussion}
+
+\clearpage
+\pagenumbering{roman}
+\pagestyle{scrheadings}
+
+\appendix
+\input{anhang}
+
+\printbibliography
+\input{eidesstattliche_versicherung}
+\end{document}

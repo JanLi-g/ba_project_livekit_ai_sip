@@ -1,0 +1,381 @@
+Quelle: Application_of_Virtualization_and_Containerization_Technologies_in_IP_Telephony.pdf
+Gesamtseiten: 5
+================================================================================
+
+
+--- Seite 1 ---
+Application of Virtualization and Containerization 
+Technologies in IP Telephony 
+ 
+V. M. Antonova 
+Moscow Technical University of Communications and 
+Informatics 
+Moscow, Russia 
+V.A. Kotelnikov Institute of Radio Engineering and 
+Electronics of the Russian Academy of Sciences 
+Moscow, Russia 
+v.m.antonova@mtuci.ru 
+A. Y. Malikov 
+Moscow Technical University of Communications and 
+Informatics 
+Moscow, Russia E. E. Malikova 
+Moscow Technical University of Communications and 
+Informatics 
+Moscow, Russia 
+e.e.malikova@mtuci.ru 
+ 
+M. A. Fartyshev 
+Moscow Technical University of Communications and 
+Informatics 
+Moscow, Russia 
+ 
+ 
+Abstract — The article considers the contemporary trends that  
+telecommunication companies are facing in the rapid ly changing 
+technological environment. One of the trends is the  technology of 
+network virtualization, which allows to significant ly increase the 
+efficiency of network resources through the organiz ation of 
+multiple virtual resources based on one physical re source. The 
+objective of this study is to analyze new tools ava ilable for the 
+implementation of a virtual IP PBX. Virtualization and 
+containerization technologies that affect the effic ient operation of 
+VoIP services are studied in the paper. The impleme ntation of 
+these technologies has been shown to facilitate mor e efficient use 
+of server resources and more secure interaction wit h multiple 
+tools for analyzing system operation. The principle s of 
+integrating software telephone exchanges into the v irtualized 
+environment are considered. Special attention is pa id to the 
+integration of a virtual Asterisk exchange into the  containerized 
+environment. Approaches to automating Asterisk’s de ployment 
+and management in the microservice architecture usi ng a 
+Kubernetes platform are also considered. It is reco mmended that 
+virtualization and containerization technologies sh ould be 
+incorporated into the curricula of technical univer sities.) 
+Keywords—virtualization; container; container orches tration; 
+IP telephony; VoIP; Kubernetes Cluster; K8s; Asteri sk;Kamailio 
+I.   INTRODUCTION  
+Voice transmission through packet switched networks  over 
+the Internet Protocol (VoIP – Voice over IP) is cur rently a 
+widespread technology across telecommunication netw orks  
+[1, 2]. Readily available solutions based on the eq uipment of 
+prominent companies such as Cisco, Avaya, Iskratel and others 
+can be used for IP telephony. IP PBXs built on soft ware 
+solutions are also widely accepted in contemporary networks. 
+These IP PBXs play an important role in the network  infrastructure, offering flexibility, scalability a nd economic 
+efficiency of the exchange. 
+IP PBXs such as Asterisk, Freeswitch and Kamailio a re 
+built on the basis of open software systems. Asteri sk, an open-
+source software PBX [3, 4] is a highly popular solu tion in the 
+field of IP telephony. It is a very flexible platfo rm that is 
+employed to organize communications in various offi ces and 
+large industrial enterprises. The PBX's functionali ty makes it 
+possible to realize almost every function, for exam ple, video 
+conferencing, voice recognition function, creation of 
+interactive voice menu (IVR or Interactive Voice Re sponse) 
+and others [5]. 
+Network Functions Virtualization (NFV) is a technol ogy 
+that has had a profound impact on the topologies of  
+telecommunication networks [6, 7]. It enables the a bstraction 
+from physical hardware and the creation of multiple  isolated 
+virtual environments on a single physical server, t hereby 
+providing more efficient use of network resources a nd 
+simplifying infrastructure management. For instance , 10-20 
+virtual machines can be run on a single physical se rver. 
+The evolution of cloud technologies and containeriz ation 
+has resulted in an increased demand for the efficie nt 
+deployment and management of the Asterisk software 
+exchange in an environment that provides high fault  tolerance, 
+automatic scaling and ease of use. Kubernetes platf orm (K8s) 
+is a standard for container orchestration that prov ides all the 
+necessary tools to build a flexible and fault-toler ant IP 
+telephony infrastructure. It is necessary to take i nto account the 
+interaction of PBX with the SIP signaling protocol and the RTP 
+multimedia traffic transfer protocol [8]. 
+979-8-3315-3263-5/25/$31.00 ©2025 IEEE 2025 Systems of Signals Generating and Processing in the Field of on Board Communications | 979-8-3315-3263-5/25/$31.00 ©2025 IEEE | DOI: 10.1109/IEEECONF64229.2025.10948100
+Authorized licensed use limited to: Hochschule für Technik Wirtschaft und Kultur. Downloaded on December 01,2025 at 14:43:18 UTC from IEEE Xplore.  Restrictions apply. 
+--- Seite 2 ---
+II.  VIRTUALIZATION AND CONTAINERIZATION 
+TECHNOLOGIES  
+Virtualization can be defined as the provision of a  set of 
+computational resources or their logical combinatio n abstracted 
+from the hardware implementation while providing lo gical 
+isolation from each other for the computational pro cesses 
+running on the same physical resource [9]. 
+A virtual machine (VM) is an environment that is pr esented 
+to the guest operating system as a hardware environ ment. VM 
+is a very convenient tool for debugging software an d 
+conducting experiments without disturbing the main OS, as 
+well as for running several operating systems on on e computer 
+concurrently [10]. A hypervisor is responsible for optimal 
+resource allocation between VMs and for isolation o f operating 
+systems. Virtualbox is an example of such a hypervi sor 
+program. 
+The following main types of virtualization can curr ently be 
+distinguished: software and full (hardware) virtual ization, 
+operating system (OS) level virtualization and appl ication 
+virtualization. 
+With hardware virtualization , the hypervisor can work 
+directly with physical resources without a host sys tem (Fig. 1). 
+The hypervisor allocates hardware to virtual machin es where 
+operating systems are installed. This results in al most full-
+fledged physical computers. At the same time, virtu al machines 
+are completely isolated from each other. 
+ 
+Fig. 1.  Full (hardware) virtualization 
+When using software virtualization, the hypervisor operates 
+in conjunction with physical resources via the host  operating 
+system, which is installed on the computer or serve r (Fig. 2). 
+Software virtualization is used by Oracle VM Virtua lBox and 
+VMware Workstation. 
+ 
+Fig. 2.  Software virtualization In the context of operating system level virtualiza tion, there 
+is no separate hypervisor layer. Instead, the host operating 
+system itself is responsible for the allocation of hardware 
+resources to multiple virtual machines and for supp orting their 
+isolation from each other (Fig. 3). These processes  are isolated 
+within a separate container. The container, in turn , receives an 
+almost full-fledged operating system where applicat ions can be 
+installed. This type of virtualization has become v ery popular 
+in recent times. 
+ 
+Fig. 3.  Operating system level virtualization 
+Application virtualization enables different applic ations to 
+run independently of the host operating system. The  virtual 
+environment in which a particular application runs separates it 
+from physical resources and the host operating syst em. This 
+type of virtualization is employed, for example, by  Docker [11, 
+12]. 
+III.  OVERVIEW OF TECHNOLOGIES FOR IMPLEMENTING A 
+VIRTUAL PBX 
+Containerization technologies have evolved, and thi s has 
+led to an increased demand for efficient deployment  and 
+management of IP-PBXs in an environment that provid es high 
+fault tolerance, automatic scaling and ease of oper ation is 
+increasing. The following discussion will consider in more 
+detail the technologies required to deploy Asterisk  in the 
+Kubernetes environment. 
+Kubernetes (K8s) is a platform for automating the 
+deployment, scaling, and management of containerize d 
+applications [13]. It is a container orchestration standard that 
+provides all the necessary tools to build a flexibl e and fault-
+tolerant IP telephony infrastructure. The platform allows for 
+efficient management of system components, offering  load 
+balancing within the cluster, and maintaining suffi cient system 
+fault tolerance and automatic service recovery. All  settings are 
+described declaratively using manifests in the YAML  or JSON 
+format, which is a specific file format perceived b y K8s. 
+The deployment of Asterisk within the Kubernetes 
+environment necessitates the decomposition of a mon olithic 
+application into discrete microservices, which allo ws achieving 
+flexibility, scalability and manageability of the s ystem [14, 15]. 
+The following components constitute the primary ele ments 
+of the architecture: 
+1. Asterisk Core, which is the principle service th at 
+handles the management of voice calls, the routing of calls, 
+and the processing of media streams. It functions w ithin a 
+Authorized licensed use limited to: Hochschule für Technik Wirtschaft und Kultur. Downloaded on December 01,2025 at 14:43:18 UTC from IEEE Xplore.  Restrictions apply. 
+--- Seite 3 ---
+container and necessitates a flexible configuration  for 
+interaction with external systems. 
+2. SIP Proxy (Kamailio), which performs the functio ns of 
+routing and balancing SIP messages prior to their t ransmission 
+to Asterisk, thereby reducing the main workload and  
+increasing fault tolerance. 
+3. Database (PostgreSQL, MySQL), which is used to s tore 
+configuration, CDR (Call Detail Record) data and us er 
+authorization data. PostgreSQL provides reliable da ta storage 
+and processing, and is easily integrated with Aster isk and 
+other services. 
+4. Configuration and management (ConfigMaps, Secret s). 
+Kubernetes provides tools for centralized managemen t of 
+configurations and secret data (logins, passwords, encryption 
+keys). 
+5. Load balancer (Ingress Controller, Load Balancer ), 
+which provides traffic distribution between service  replicas 
+and ensures an entry point into the cluster. 
+6. Monitoring and Logging (Prometheus, Grafana), wh ich are 
+used to track metrics, performance and to analyze A sterisk logs. 
+Asterisk deployment in the Kubernetes cluster can b e 
+organized in several ways, each of which has its ow n features 
+and areas of application. 
+The monolithic deployment  involves running Asterisk in a 
+single container, incorporating all the necessary u nits. This is 
+the simplest option, suitable for testing or small systems. 
+However, this approach makes it difficult to scale and update 
+the application. 
+The microservice approach  involves splitting Asterisk 
+functions into several containers, including SIP pr oxy 
+(Kamailio), database (PostgreSQL), RTP proxy (RTP P roxy), 
+etc. This option offers flexibility, fault toleranc e and easy 
+upgrades, though it requires more complex customiza tion. 
+The hybrid approach combines elements of monolithic and 
+microservice deployments, thereby enabling the sepa ration of 
+critical components into discrete services, while l eaving the 
+main functions in a single container. This represen ts a good 
+compromise for a gradual migration. 
+Practical Implementation of Asterisk IP-PBX in a 
+Kubernetes Cluster 
+In order to study virtualization technology, studen ts are 
+offered to conduct laboratory experiments on the de ployment 
+of an IP-PBX of the Asterisk type in a Kubernetes p latform. In 
+this case, it is important to ensure the stable ope ration of the 
+system when the load on VoIP services increases. As  illustrated 
+in Fig. 4, the block diagram shows the interaction of the system 
+components. This diagram illustrates the architectu re of the 
+deployed services, including the traffic forwarding  scheme. 
+Traffic arrives at the entry point of the Kubernete s cluster when 
+accessing the virtual PBX. The following services a re launched 
+as containers: Asterisk, Postgres, Kamailio, and RT PProxy. 
+The Kubernetes platform is characterized by its own  
+terminology: Running containers with certain characteristics and  
+applications running in them are called pods ; 
+Cluster nodes are both control and compute nodes;  
+Master Node is  responsible for setting tasks accepted from 
+the API server; 
+Worker Node is responsible for executing the container on 
+its computing resources. 
+ 
+Fig. 4.  Block diagram of the system component interaction 
+The initial step is to deploy a K8s cluster. One of  the 
+minimum system configurations involves one Master n ode and 
+one Worker node. We will use virtual machines with the 
+following specifications: 
+– Master Node with two virtual processors and 2 GB RAM; 
+– Worker Node with four virtual processors and 8 GB  RAM. 
+The selection of VM capacities is deliberate as the  
+minimum parameters of a node in a K8s cluster are t wo CPUs 
+(Central Processing Unit) and 2 GB RAM. For the Mas ter 
+Node this is quite enough, since if there is at lea st one Worker 
+Node, the containers are started on the Worker Node , while the 
+Master Node is engaged in tracking the viability of  pods, 
+restarting, etc. 
+Subsequently, the K8s cluster must be initialized u sing the 
+kubeadm tool, for this purpose the following comman d should 
+be entered on the Master Node: 
+kubeadm init --apiserver-advertise-address=192.168. 255.136  
+The command will initialize the cluster with the AP I server 
+address at 192.168.255.136. 
+In addition, configuration files must be imported i nto the 
+cluster. It is necessary to deploy a plugin to mana ge IP 
+addressing of pods, as well as a command to add the  first 
+Worker Node to the cluster with the generated token .  
+Authorized licensed use limited to: Hochschule für Technik Wirtschaft und Kultur. Downloaded on December 01,2025 at 14:43:18 UTC from IEEE Xplore.  Restrictions apply. 
+--- Seite 4 ---
+Kubernetes tokens  are cryptographic credentials that are 
+used to authenticate users and service accounts whe n 
+interacting with the Kubernetes API server. 
+The next step is to export the configuration file o f the 
+created cluster, in order to interact with it. The subsequent step 
+involves the addition of Worker Nodes to the cluste r. The 
+exportation of the configuration file and the gener ation of a 
+token for the Worker Node connection are illustrate d in Fig. 5. 
+ 
+Fig. 5.  The result of the Worker Node connection 
+In the subsequent phase, the deployment of Asterisk , 
+Postgres, TRPProxy and Kamailio pods is to be under taken. 
+The status of all pods in the cluster, including th ose with the 
+pod IP addressing management plugin, Asterisk, RTPP roxy 
+and Kamailio (Fig. 6). 
+ 
+Fig. 6.  Information about running pods 
+The next step is to initiate a test call in order t o make sure 
+that the PBX is functioning correctly. 
+ 
+Fig. 7.  Positive test call result In the course of the deployment of Asterisk PBX in the 
+Kubernetes environment, the designated tasks were 
+successfully accomplished. These included the devel opment of 
+the system infrastructure, the automatic deployment  and 
+configuration of services. A test call was made. Th e system 
+demonstrated stable operation, thereby confirming t he 
+feasibility of creating highly efficient and scalab le solutions for 
+IP telephony in a containerized environment. 
+IV.  PROSPECTS OF USING ASTERISK IN A KUBERNETES 
+CLUSTER  
+In the process of technology development and increa sing 
+requirements for communication services, the Asteri sk PBX 
+and Kubernetes platform have good prospects for joi nt use. At 
+the same time it is important to ensure stable oper ation of the 
+system when the load on VoIP services increases. Sc alability 
+issues are solved by automatically creating additio nal pods 
+from the Asterisk image. Kubernetes allows you to 
+dynamically scale the system using the Horizontal P od 
+Autoscaler system. This is a system for scaling the  resources 
+available for containers; it monitors the load of C PU and RAM 
+and creates additional pods if necessary. Kamailio in turn plays 
+the role of a balancer, distributing the load of SI P traffic 
+between Asterisk replicas. PostgreSQL database is a lso scaled 
+by creating replica pods. 
+The fault tolerance of the system is ensured by mec hanisms 
+that automatically restart containers in case of fa ilure. 
+Kubernetes also provides load balancing within the cluster, 
+distributing it evenly across the cluster nodes. 
+Modern approaches to automation, which are actively  used 
+by DevOps engineers in development, make it possibl e to 
+simplify infrastructure management by implementing 
+automated processes that include building, testing and 
+deploying software. Using unified K8s packages to r un 
+standard applications in the container orchestratio n 
+environment makes the network management process mo re 
+convenient and predictable for operators. 
+Currently, 30 virtual machines have been created on  the 
+server for laboratory works. All of them are prepar ed to 
+perform laboratory works.  Students deploy Asterisk  IP PBXs 
+on these virtual machines. In the future, it is pla nned to expand 
+the list of laboratory works with the help of addit ional settings 
+of the Asterisk exchange in the containerized envir onment. 
+V.  CONCLUSION  
+The application of virtualization and containerizat ion 
+technologies to IP telephony is a very timely prosp ect. The 
+laboratory work described in the article provides g reat 
+opportunities to study these technologies. 
+Working with virtual machines and containers, stude nts not 
+only get acquainted with promising virtual IP PBXs,  but also 
+gain practical experience of working with such equi pment. 
+Using the Kubernetes platform for Asterisk PBX 
+management allows ensuring flexibility, fault toler ance and 
+scalability of the system, which is an important re quirement for 
+modern communication services. The possibilities of  process 
+Authorized licensed use limited to: Hochschule für Technik Wirtschaft und Kultur. Downloaded on December 01,2025 at 14:43:18 UTC from IEEE Xplore.  Restrictions apply. 
+--- Seite 5 ---
+automation, integration with cloud solutions and ne twork 
+technologies open wide prospects for further develo pment and 
+optimization of such services. This creates the bas is for 
+developing and improving the infrastructure of IP t elephony 
+systems using a virtual Asterisk PBX in the Kuberne tes 
+platform. 
+REFERENCES  
+[1]  N.N. Vasin, “Packet switching technologies,” tutori al. PART 1. Routing 
+and Switching. PGUTI Publ., 2021, 294 p. [in Russia n]  
+[2]  V. Olifer, N. Olifer, “Computer Networks: Principle s, Technologies and 
+Protocols for Network Design,” St. Petersgurg: Pite r, 2020, 1008 p. [in 
+Russian]  
+[3]  M.G. Kanischeva, Y.Y. Malikova, I.I. Pelevin and A. P. Pshenichnikov, 
+“The basics of working with the virtual telephone A STERISK IP-PBX,” 
+textbook. Moscow: Media Publisher, 2021, 100 p. [in  Russian] 
+[4]  V.M. Antonova, E.E. Malikova, M.S. Stepanov, “Ways of the Asterisk 
+software PBX protection,” T-Comm , vol. 17, no. 10, 2023, pp. 52-58. 
+DOI: 10.36724/2072-8735-2023-17-10-52-58. [5]  J. Meggelen, L. Madsen, J. Smith, “AsteriskTM: The future of 
+telephony,” 2nd ed. Translated from English, St. Pe tersburg: Symbol-
+Plus, 2019, 656 p. [in Russian] 
+[6]  A.V. Roslyakov, S.V. Vanyashin, “Future Networks,” Samara, PSUTI 
+Publ., 2015, 274 p. [in Russian] 
+[7]  R.L. Smelyanskiy, V.A. Antonenko, “SDN and NFV Prin ciples in 
+Computer Networks,” Moscow, KURS, 2020, 160 p. [in Russian] 
+[8]  B.S. Goldshtein, “Infocommunications networks and s ystems,” St. 
+Petersburg, BHV-Petergurg, 2019, 208 p. [in Russian ] 
+[9]  V.M. Antonova, V.P. Blinov, M.A. Egorov, A.Y. Malik ov, “Studying 
+the Principles of Infocommunication Network Virtual isation Using the 
+Docker Platform,” 2024 Systems of Signals Generating and Processing 
+in the Field of on Board Communications , 2024, pp. 24-28. 
+[10]   A.H. Sayers, I. Miell, “Docker in Practice, Mannin g,” 2019, 384 p. 
+[11]   K8s. Official Site: Container Orchestration Softwa re. URL: 
+https://kubernetes.io/ 
+[12]   Asterisk. Official site: PBX Software. URL: https: //www.asterisk.org/  
+[13]   S.A. Grushko, A.P. Pshenichnikov, E.E. Malikova an d A.Y. Malikov, 
+“Virtual Asterisk IP-PBX Operation Studying and Exp loring at the 
+University,” 2022 Systems of Signals Generating and Processing i n the 
+Field of on Board Communications , Moscow, Russian Federation, 2022, 
+pp. 15-20. 
+ 
+ 
+Authorized licensed use limited to: Hochschule für Technik Wirtschaft und Kultur. Downloaded on December 01,2025 at 14:43:18 UTC from IEEE Xplore.  Restrictions apply. 

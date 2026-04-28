@@ -1,0 +1,181 @@
+\chapter{Diskussion, Limitationen und Fazit}\label{chap:diskussion}
+
+Dieses Kapitel bündelt die Interpretation der Evaluationsergebnisse, die wichtigsten Erkenntnisse aus der iterativen Entwicklung, eine Einordnung der Limitationen sowie praxisnahe Implikationen und einen Ausblick. Es schließt mit einer kurzen Schlussbemerkung, die die Forschungsfrage in komprimierter Form beantwortet und die zentralen Beiträge zusammenführt.
+
+Die Ergebnisse der Evaluation werden im Kontext der Forschungsfrage und des aktuellen Stands der Technik interpretiert. Dabei liegt der Fokus auf der Bewertung der technischen Realisierbarkeit, der Einordnung der Leistungsmetriken und der strategischen Implikationen für produktive Deployments. Zentral ist die Validierung der in Kapitel 1 formulierten Hypothesen.
+
+\section{Validierung der Hypothesen}
+
+\subsubsection{H1 (Funktionalität): Validierung durch bidirektionale Audioübertragung}
+
+\textbf{Einordnung nach Literatur zu \acrshort{WebRTC}-\acrshort{SIP}-Interoperabilität:} Stabile bidirektionale Audioübertragung zwischen \acrshort{SIP} und \acrshort{WebRTC} hängt vor allem von korrekter Codec-Verhandlung (z.\,B. Opus), \acrshort{NAT}-Traversal und Medienpfad-Verschlüsselung ab. \acrshort{ICE} führt nach RFC 5245 \parencite{rfc5245} systematische Kandidatensammlungen und Konnektivitätsprüfungen durch, um auch hinter \acrshort{NAT} einen funktionsfähigen Pfad aufzubauen. \acrshort{TURN} stellt laut RFC 5766 \parencite{rfc5766} ein Relay bereit, falls Direktverbindungen scheitern, und \acrshort{DTLS}-\acrshort{SRTP} verhandelt nach RFC 5764 \parencite{rfc5764} die Schlüssel unmittelbar auf dem Medienpfad. Opus arbeitet gemäß RFC 6716 \parencite{rfc6716} intern mit 48 kHz und ist auf niedrige Verzögerungen ausgelegt, was für interaktive Sprache entscheidend ist.
+
+Die in dieser Arbeit gemessene Fehlerrate von 0\,\% über 60 Calls (30 \acrshort{WebRTC}-\acrshort{UI}, 30 \acrshort{SIP}) bestätigt, dass die implementierte Architektur diese Anforderungen erfüllt. Insbesondere die erfolgreiche Integration von Asterisk als \acrshort{SIP}-Proxy mit LiveKit als \acrshort{WebRTC}-Server zeigt, dass Media-Gateways als Brücke zwischen klassischer Telefonie und modernen \acrshort{WebRTC}-basierten Sprach-\acrshort{KI}-Systemen effektiv eingesetzt werden können. \textbf{Die Hypothese H1 wird vollständig bestätigt.}
+
+\subsubsection{H2 (Latenz): Akzeptanz im Voice-AI-Kontext}
+
+\textbf{Einordnung nach Literatur zu Sprach-\acrshort{KI}-Systemen und \acrshort{ITU-T}-Standards:} Laut \acrshort{ITU-T} G.114 \parencite{ITU-T-G114} gelten Einwegverzögerungen unter etwa 150\,ms für klassische Telefonie als praktisch nicht wahrnehmbar, Werte zwischen etwa 150 und 400\,ms als noch hinnehmbar und größere Verzögerungen als zunehmend störend. Für Sprach-\acrshort{KI}-Systeme liegen in der Praxis häufig deutlich höhere Toleranzgrenzen, da Nutzer eine gewisse Verarbeitungszeit erwarten \parencite{fathullah2023_promptaudio}.
+
+Die gemessenen Werte liegen in den erwartbaren Bereichen für Sprach-\acrshort{KI}-basierte Telefonie: Die Post-\acrshort{STT}-Antwortzeit liegt bei Median 386\,ms nach Vorliegen des Transkripts; die \acrshort{WebRTC}-\acrshort{UI}-\acrshort{STT}-Latenz (Median 1002\,ms) und die \acrshort{SIP}-\acrshort{STT}-Latenz (Median 766\,ms) bleiben deutlich unterhalb der 2-Sekunden-Grenze, ab der Nutzer Verzögerungen als träge wahrnehmen. Im Median für \acrshort{WebRTC}-\acrshort{UI} wird die von \acrshort{ITU-T} G.114 für Telefonie als akzeptabel erachtete Größenordnung unterschritten. \textbf{Die Hypothese H2 wird bestätigt.}
+
+\subsubsection{H4 (Skalierbarkeit): Horizontale Skalierung via Container-Orchestrierung}
+
+Für produktive Szenarien kann das System durch zusätzliche Container-Instanzen, Load-Balancing mittels Kubernetes Ingress oder Migration zu Kubernetes horizontal skaliert werden. Container-Orchestrierung mit Kubernetes ist laut \textcite{Antonova2025} als Standard etabliert und bietet Lastverteilung, Ausfallsicherheit und automatisches Scaling für Asterisk-basierte \acrshort{VoIP}-Services. Für größere Deployments (> 10 parallele Calls) wird Horizontal Pod Autoscaling empfohlen.
+
+Die in dieser Arbeit gemessene Ressourcenauslastung (11{,}2\,\% \acrshort{CPU}, 11{,}2--12{,}1\,GB \acrshort{RAM}) bei 1--2 parallelen Calls zeigt, dass ausreichend Headroom für lokale Skalierung vorhanden ist. Die Architektur ermöglicht damit sowohl vertikale Skalierung (größere VM, mehr Ressourcen pro Pod) als auch horizontale Skalierung (zusätzliche Pods mit Load-Balancing). \textbf{Die Hypothese H4 wird bestätigt.}
+
+\subsubsection{H5 (Spracherkennungsrobustheit): Qualitative Validierung mit Einschränkungen}
+
+Qualitativ zeigte sich, dass alle Prompts in den \acrshort{WebRTC}-\acrshort{UI}- und \acrshort{SIP}-Tests erfolgreich erkannt und korrekt verarbeitet wurden (Fehlerrate 0\,\% über 60 Calls). Die qualitative Beobachtung, dass alle 60 Calls erfolgreich transkribiert wurden, deutet darauf hin, dass die \acrshort{STT}-Komponente für die evaluierten Anwendungsfälle (Allgemeinwissen-Prompts in kontrollierter Umgebung) ausreichend robust ist.
+
+Für produktive Deployments mit domänenspezifischer Fachsprache, Dialekten oder stark variierender Audioqualität wird eine systematische Word-Error-Rate-Messung mit repräsentativen Testsets empfohlen. Dies bleibt als \textbf{zukünftige Arbeit} offen. \textbf{Die Hypothese H5 wird auf Basis der qualitativen Beobachtungen teilweise bestätigt} – eine abschließende quantitative Bewertung steht aus.
+
+\subsection{Funktionalität und Stabilität}
+
+Über die reine Hypothesen-Validierung hinaus wirft die beobachtete Stabilität tiefergehende Fragen auf: Die 0\,\%-Fehlerrate demonstriert zwar technische Machbarkeit, sagt aber wenig über die Robustheit unter realen Bedingungen aus. In kontrollierten Labortests sind hohe Erfolgsraten zu erwarten.
+Die erfolgreiche Integration von Asterisk und LiveKit zeigt jedoch ein strategisches Muster: Durch Verwendung bewährter Frameworks mit umfassender \acrshort{NAT}-Traversal-Implementierung werden ganze Klassen von Fehlerquellen eliminiert. Dies ist weniger ein technisches als ein architekturelles Prinzip: Spezialisierte, audittierte Software reduziert Risiken gegenüber vollständiger Eigenentwicklung. Dies ist ein Lessons Learned, das auf zukünftige Projekte übertragbar ist.
+
+\subsection{Latenz und Nutzererlebnis}
+
+Über die Hypothesen-Validierung hinaus offenbart die Latenz-Diskrepanz zu \acrshort{ITU-T}-Standards einen Paradigmenwechsel: \acrshort{KI}-basierte Telefoniesysteme operieren nicht in der klassischen Telefonie-Welt (Realtime-Constraint < 400ms), sondern in einer neuen Kategorie, in der eine höhere Verarbeitungszeit erwartet wird. Dies ist nicht technisches Versagen, sondern konzeptionelle Verschiebung.
+
+Entscheidend ist die Interpretation der Latenz-Variabilität (457--2096\,ms): Diese reflektiert nicht primär technische Instabilität, sondern die inhärente Nicht-Determinismus cloudbasierter \acrshort{LLM}-Inferenz. Hier zeigt sich ein fundamentaler Trade-off zwischen Modellkomplexität und Responsiveness. Neuere Neural-Audio-Codec-Ansätze wie \acrshort{AudioDec} \parencite{audiodec_2023} erreichen zwar sub-10ms Codec-Latenzen, lösen aber nicht das eigentliche Bottleneck: Die \acrshort{LLM}-Inferenz dominiert die Gesamtlatenz.
+
+Für produktive Szenarien ergibt sich daraus eine klare Differenzierung: FAQ-/Hotline-Systeme können mit den gemessenen Latenzen operieren. Echtzeit-Sprachkommandos erfordern hingegen lokale Inferenz. Diese Erkenntnis hat direkte Konsequenzen für Architekturentscheidungen.
+
+\subsection{Ressourceneffizienz und Skalierbarkeit}
+
+Die Ressourcenauslastung (11{,}2\,\% \acrshort{CPU}, 11--12\,GB \acrshort{RAM}) erscheint auf den ersten Blick moderat, wirft aber die Frage nach Skalierungsgrenzen auf: Der verfügbare Headroom für 3--5 parallele Calls deutet auf sub-lineare Skalierung hin -- vermutlich durch Shared-Memory-Overhead der Container-Runtime.
+
+Im Kontext der \acrshort{ETSI}-\acrshort{NFV}-Richtlinien \parencite{ETSI-NFV,ETSI-REL} zeigt sich, dass die prototypische Architektur zwar die Grundanforderungen erfüllt (minimaler Overhead, Elastizität), jedoch kritische Produktiv-Features wie Self-Healing und automatisierte Fehlerbehandlung noch nicht implementiert sind. Die Empfehlung zur Kubernetes-Migration ab 10 parallelen Calls ist daher weniger eine technische als eine strategische Entscheidung: Kubernetes bietet nicht nur Horizontal Pod Autoscaling \parencite{Antonova2025}, sondern auch das für produktive Systeme essenzielle Lifecycle-Management.
+
+
+\section{Iterative Entwicklung und Erkenntnisse}
+
+Die iterative Entwicklung durchlief fünf Phasen, die jeweils fundamentale Architekturentscheidungen erzwangen. Die zentrale Erkenntnis war nicht nur technischer Natur (Hardware → Netzwerk), sondern methodisch: Iterative Validierung minimiert Risiken in komplexen verteilten Systemen.
+
+\subsection{Paradigmenwechsel: Hardware vs. Netzwerk}
+
+Der initiale Hardware-basierte Ansatz (PipeWire/PulseAudio) scheiterte nicht an einzelnen technischen Details, sondern an einem fundamentalen Designkonflikt: Container-Isolation und Hardware-Zugriff sind konzeptionell inkompatibel. Die Probleme (D-Bus-Fehler, Permission-Konflikte, dynamische Node-IDs) waren Symptome dieses Konflikts, nicht isolierte Bugs.
+
+Der Wechsel zu netzwerkbasierter Audio-Übertragung (\acrshort{RTP}/\acrshort{WebRTC}) war strategisch: Er eliminierte nicht nur technische Probleme, sondern ermöglichte erst die spätere Skalierung via Kubernetes. Diese Entscheidung bestätigt Best Practices für containerisierte Audio-Verarbeitung und hat direkte Implikationen für zukünftige Projekte: Netzwerkprotokolle vor Hardware-Abstraktion.
+
+\subsection{Framework-Wahl als Risikominimierung}
+
+Die Entscheidung für Asterisk (vs. Baresip) war weniger eine technische Optimierung als eine strategische Risikominimierung: Etablierte \acrshort{PBX}-Lösungen bringen bewährte Implementierungen von \acrshort{SIP}, \acrshort{RTP} und \acrshort{NAT}-Traversal mit. Dies spart nicht nur Entwicklungszeit, sondern reduziert das Risiko subtiler Protokoll-Inkonsistenzen, die in Eigenentwicklungen häufig auftreten.
+
+Die Wahl von LiveKit als \acrshort{WebRTC}-\acrshort{SFU} folgte ähnlicher Logik: Die integrierte \acrshort{SIP}-Bridge und automatisches Codec-Transcoding (G.711 → Opus) eliminieren ganze Klassen potentieller Fehlerquellen. Diese Erkenntnis hat methodische Implikationen: In verteilten Systemen ist die Reduktion von Integrationspunkten oft wichtiger als die Optimierung einzelner Komponenten.
+
+\subsection{Hybrid-Architekturen als Optimum}
+
+Die Integration lokaler \acrshort{VAD} vor cloudbasierten \acrshort{STT}-Services illustriert ein generelles Prinzip: Hybrid-Architekturen (lokale Vorverarbeitung + Cloud-\acrshort{KI}) optimieren nicht nur Kosten, sondern auch Latenz und Datenschutz. Dies widerspricht dem verbreiteten All-or-Nothing-Ansatz (rein Cloud vs. rein lokal) und zeigt, dass granulare Aufteilung der Verarbeitungspipeline strategische Vorteile bietet.
+
+\subsection{Latenzoptimierung durch Architekturmuster}
+
+Die Reduktion der wahrgenommenen Latenz von \textasciitilde 3s auf \textasciitilde 500ms (Faktor 6) durch \acrshort{LLM}-Token-Streaming und frühzeitigen \acrshort{TTS}-Start zeigt: Wahrgenommene Performance ist oft wichtiger als absolute Latenz. Dieses Muster (Progressive Enhancement) ist aus Web-Entwicklung bekannt, findet aber selten Anwendung in Voice-\acrshort{AI}-Systemen. Die Erkenntnis: Eventbasierte Architekturen ermöglichen Overlap zwischen \acrshort{LLM}-Inferenz und \acrshort{TTS}-Synthese -- ein Pattern, das auf andere Pipeline-Stufen übertragbar ist.
+
+\subsection{Lessons Learned für produktive Systeme}
+
+Die iterative Entwicklung offenbart drei Meta-Erkenntnisse: (1) Containerisierte Telefonie erfordert strikte Netzwerk-Orientierung, (2) Framework-Auswahl ist primär eine Risikominimierungs-, nicht eine Performance-Entscheidung, und (3) Hybrid-Architekturen optimieren multiple Dimensionen gleichzeitig (Kosten, Latenz, Datenschutz). Diese Erkenntnisse sind direkt auf produktive Deployments übertragbar.
+
+\section{Limitationen der Arbeit}
+
+Die methodischen Einschränkungen dieser Arbeit sind nicht nur technischer Natur, sondern reflektieren fundamentale Trade-offs zwischen prototypischer Machbarkeitsanalyse und produktionsreifer Systemvalidierung. Die Limitationen werden im Folgenden kritisch diskutiert und ihre Implikationen für die Generalisierbarkeit der Ergebnisse bewertet.
+
+\subsection{Methodische Grenzen der Evaluation}
+
+Die Stichprobe von 60 Testanrufen ist für prototypische Validierung ausreichend, wirft aber die Frage nach statistischer Power auf: Können seltene Fehlerszenarien (z.\,B. Race Conditions bei parallelen Calls) mit dieser Stichprobengröße zuverlässig detektiert werden? Die beobachtete 0\,\%-Fehlerrate ist daher mit Vorsicht zu interpretieren -- sie bestätigt Stabilität unter kontrollierten Bedingungen, garantiert jedoch keine Robustheit in produktiven Szenarien mit N > 100 parallelen Calls.
+
+Kritisch ist die fehlende Diversifikation der Testbedingungen: Die kontrollierte \acrshort{LAN}-Umgebung eliminiert reale Netzwerk-Variabilität (Jitter, Paketverlust, variable Bandbreite). Dies ist methodisch vertretbar für eine Machbarkeitsstudie, schränkt jedoch die Übertragbarkeit auf mobile Verbindungen oder instabile Netzwerke ein. Die \acrshort{RFC} 6716 zu Opus \parencite{rfc6716} betont explizit Robustheit gegenüber Paketverlust -- eine Eigenschaft, die in dieser Arbeit nicht systematisch getestet wurde.
+
+Die Abwesenheit objektiver Audio-Qualitätsmetriken (\acrshort{PESQ}, \acrshort{POLQA}) ist eine bewusste Limitierung: Solche Metriken erfordern Referenz-Transkripte und standardisierte Testsets (z.\,B. LibriSpeech), die den Scope einer Machbarkeitsstudie übersteigen. Für produktive Deployments mit hohen Qualitätsanforderungen ist diese Lücke jedoch kritisch.
+
+\subsection{Testdiversität und externe Validität}
+
+Die Testprompts (Allgemeinwissen, Standarddeutsch, einzelner Sprecher) repräsentieren ein idealisiertes Szenario. Reale Anwendungen müssen mit domänenspezifischer Fachsprache, Dialekten und akzentuierter Aussprache umgehen. Die qualitative Beobachtung einer 0\,\%-Fehlerrate hat daher begrenzte Aussagekraft für die tatsächliche Robustheit in produktiven Szenarien.
+
+Diese Limitierung ist nicht trivial: Fathullah et al. (2023) zeigen, dass \acrshort{STT}-Genauigkeit stark von linguistischer Diversität abhängt \parencite{fathullah2023_promptaudio}. Die fehlende Word-Error-Rate-Analyse mit diversen Sprechern, Hintergrundgeräuschen und Akzenten ist daher eine substanzielle methodische Einschränkung. Für Produktiv-Deployments (z.\,B. medizinische Hotlines) wäre eine systematische Evaluation mit domänenspezifischen Testsets unerlässlich.
+
+\subsection{Systemspezifische Abhängigkeiten}
+
+Die Hardware-Spezifität (16\,GB \acrshort{RAM}, 8 Cores, x86) ist problematisch für die Generalisierbarkeit: Unterschiedliche Architekturen (z.\,B. ARM für Edge-Deployment) können signifikant abweichende Ressourcen-Charakteristiken aufweisen \parencite{Antonova2025}. Die gemessenen Skalierungsgrenzen (3--5 parallele Calls) sind daher systemspezifisch und nicht ohne Weiteres auf andere Hardware-Konfigurationen übertragbar.
+
+Die Provider-Abhängigkeit (Deutsche Telekom) ist kritischer als auf den ersten Blick erscheint: \acrshort{SIP}-Trunk-Anbieter unterscheiden sich in Codec-Unterstützung, \acrshort{QoS}-Policies und Netzwerk-Routing. Die \acrshort{ETSI}-Richtlinien \parencite{ETSI-REL} betonen explizit die Notwendigkeit, Provider-Variabilität in Evaluationen zu berücksichtigen. Die Ergebnisse dieser Arbeit sind daher nur bedingt auf andere Provider übertragbar.
+
+Die Cloud-\acrshort{API}-Abhängigkeit (OpenAI) ist fundamental: Die gemessenen Latenzen reflektieren die aktuelle Server-Auslastung und geografische Nähe zu Rechenzentren. Diese nicht-deterministische Natur cloudbasierter \acrshort{LLM}-Inferenz \parencite{ReliabilityVirtualizedNetworks} schränkt die Reproduzierbarkeit der exakten Latenzwerte ein -- eine Limitation, die in zukünftigen Arbeiten durch statistische Modellierung adressiert werden sollte.
+
+\section{Praktische Implikationen}
+
+Die Ergebnisse dieser Arbeit haben direkte strategische Implikationen für Organisationen, die Voice-\acrshort{KI}-Systeme produktiv einsetzen wollen. Die folgenden Empfehlungen adressieren Architekturentscheidungen, Kostenoptimierung und Skalierungsstrategien.
+
+\subsection{Architekturempfehlungen für Produktiv-Deployments}
+
+Die Wahl zwischen Docker Compose und Kubernetes ist keine rein technische, sondern eine strategische Entscheidung: Docker Compose eignet sich für Entwicklung/Testing (< 10 Calls), erreicht jedoch schnell Skalierungsgrenzen. Kubernetes bietet nicht nur Horizontal Pod Autoscaling, sondern auch kritische Produktiv-Features: Self-Healing, Rolling Updates, Multi-Node-Resilienz.
+
+Die Ausrichtung an \acrshort{ETSI}-\acrshort{NFV}-Richtlinien \parencite{ETSI-NFV,ETSI-REL} ist weniger Compliance-Anforderung als strategische Weitsicht: Standardisierte Schnittstellen ermöglichen Interoperabilität mit existierenden Telefonie-Infrastrukturen und reduzieren Vendor-Lock-in. Für \acrshort{KMU} ist dies besonders relevant, da sie typischerweise heterogene IT-Landschaften betreiben.
+
+Eine kritische Entscheidung ist der Trade-off Cloud vs. On-Premise: Cloud-\acrshort{LLM}s bieten State-of-the-Art-Qualität ohne Infrastruktur-Investment, schaffen jedoch \acrshort{DSGVO}-Risiken bei sensiblen Daten (z.\,B. medizinische Hotlines). Die modulare Architektur dieser Arbeit ermöglicht granulare Entscheidungen: \acrshort{STT}/\acrshort{TTS} cloudbasiert, \acrshort{LLM}-Inferenz On-Premise -- ein Hybrid-Ansatz, der Qualität und Datenschutz balanciert.
+
+\subsection{Kostenoptimierung durch strategische Hybridisierung}
+
+Die Integration lokaler \acrshort{VAD} reduziert \acrshort{API}-Kosten um geschätzte 30--50\,\%, indem Stille/Rauschen vor Cloud-Übertragung gefiltert wird. Dieses Prinzip ist generalisierbar: Lokale Vorverarbeitung (Noise Reduction, Echo Cancellation) reduziert Cloud-\acrshort{API}-Auslastung und damit Kosten.
+
+Eine weitergehende Strategie ist adaptive \acrshort{STT}-Auswahl: Lokale Modelle (z.\,B. \acrshort{Vosk}) für Standardfälle, Cloud-\acrshort{STT} (Whisper) nur bei niedriger Confidence. Dies erfordert jedoch Confidence-Thresholding und Fallback-Logik -- eine Komplexität, die gegen Kostenersparnis abgewogen werden muss.
+
+Für \acrshort{LLM}-Inferenz ist der Trade-off noch deutlicher: Lokale Modelle (Llama 3, Mistral) eliminieren laufende \acrshort{API}-Kosten, erfordern jedoch Hardware-Investment (GPU-Server) und Betriebsaufwand (Modell-Updates, Fine-Tuning). Die Break-Even-Analyse hängt von Call-Volumen ab: Ab ~1000 Calls/Tag amortisiert sich lokale Inferenz typischerweise.
+
+\subsection{Skalierungsstrategien und Hochverfügbarkeit}
+
+Stateless \acrshort{VNF}-Design mit externer Session-Persistence (Redis) ist fundamental für horizontale Skalierung: Pods können ohne State-Migration repliziert werden. Dies ermöglicht nicht nur Skalierung, sondern auch Rolling Updates ohne Downtime.
+
+Redundanz über Availability-Zones ist kritisch für Hochverfügbarkeit, schafft jedoch Latenz-Overhead durch geografische Verteilung. Der Trade-off: Lokale Redundanz (Single-AZ, Multi-Pod) minimiert Latenz, eliminiert jedoch nicht das Risiko von AZ-Ausfällen. Multi-AZ-Deployment erhöht Resilienz, potenziell auf Kosten der Latenz.
+
+Proaktives Monitoring (\acrshort{Prometheus}/\acrshort{Grafana}) ist nicht nur Observability-Tool, sondern Grundlage für datengetriebene Skalierungsentscheidungen: Autoscaling-Policies sollten auf realen Latenz-/Auslastungs-Metriken basieren, nicht auf statischen Schwellwerten. Dies erfordert jedoch kontinuierliches Tuning der Policies -- ein Betriebsaufwand, der in der TCO-Kalkulation berücksichtigt werden muss.
+
+\section{Zukünftige Forschungsrichtungen}
+
+Die Ergebnisse dieser Arbeit offenbaren systematische Forschungslücken, deren Schließung essentiell für produktive Deployments ist. Die folgenden Richtungen werden nach ihrer strategischen Relevanz priorisiert.
+
+\subsection{Lokale LLM-Inferenz: Datenschutz vs. Qualität}
+
+Die kritischste Forschungsfrage ist der Trade-off zwischen lokaler Inferenz (Datenschutz, Kosten) und Cloud-\acrshort{LLM}s (Qualität, Aktualität). Zukünftige Arbeiten sollten nicht nur technische Metriken (Latenz, Modellgröße) evaluieren, sondern auch regulatorische Implikationen: Erfüllt lokale Inferenz \acrshort{DSGVO}-Anforderungen für sensible Domänen (medizinische Hotlines)? Welche Mindest-Modellgröße garantiert akzeptable Dialog-Qualität?
+
+Besonders relevant ist die Frage nach Fine-Tuning-Strategien: Domänenspezifische Anpassung lokaler Modelle (Llama 3, Mistral) könnte die Qualitätslücke zu Cloud-\acrshort{LLM}s schließen, erfordert jedoch Trainingsdaten und Compute-Ressourcen. Retrieval-Augmented Generation (RAG) bietet eine Alternative, wirft aber die Frage nach Latenz-Overhead auf.
+
+\subsection{Edge-Deployment: Dezentralisierung als Paradigma}
+
+Die Verteilung von \acrshort{KI}-Komponenten auf Edge/Cloud ist weniger technische Optimierung als fundamentaler Paradigmenwechsel: Statt zentralisierter Cloud-Inferenz wird Verarbeitung näher an die Datenquelle verlagert. Dies reduziert nicht nur Latenz, sondern auch Datenschutz-Risiken (lokale Audio-Verarbeitung).
+
+Kritisch ist die Frage nach Edge-Hardware: Consumer-grade ARM-Boards (Raspberry Pi 5) vs. dedizierte Edge-Server? Welche Modellgröße ist auf Edge-Hardware realistisch? Intelligente Routing-Strategien (Edge-\acrshort{STT} bei hoher Confidence, Fallback zu Cloud bei Unsicherheit) erfordern Orchestrierungs-Logik -- eine Komplexität, die systematisch evaluiert werden muss.
+
+\subsection{Multimodale Erweiterung: Über reine Telefonie hinaus}
+
+Die Integration visueller Informationen (WebRTC Video, Screen-Sharing) erweitert Anwendungsfälle dramatisch: Remote-Support mit visueller Diagnostik, interaktive Produktberatung mit Produktvisualisierung. Computer-Vision-Modelle (z.\,B. für OCR, Objekterkennung) könnten zusätzlichen Kontext für \acrshort{LLM}-Inferenz liefern.
+
+Kritisch ist jedoch die Latenz-Frage: Multimodale Modelle (z.\,B. GPT-4 Vision) haben höhere Inferenz-Latenzen als reine Text-\acrshort{LLM}s. Wie wirkt sich dies auf Dialog-Fluency aus? Erfordert multimodale Interaktion andere Latenz-Toleranzen als reine Voice-Dialoge?
+
+\subsection{Domänenspezifische Optimierung und Benchmarking}
+
+Die fehlende systematische Evaluation domänenspezifischer Szenarien (medizinische Hotlines, juristischer Support) ist eine kritische Lücke. Zukünftige Arbeiten sollten standardisierte Testsets mit domänenspezifischer Terminologie, Akzenten und Hintergrundgeräuschen entwickeln. Dies ermöglicht vergleichbare Benchmarks zwischen verschiedenen Systemen.
+
+RAG-Ansätze sind besonders relevant für domänenspezifische Optimierung: Integration externer Wissensdatenbanken (z.\,B. medizinische Lexika) ohne vollständiges Fine-Tuning. Die Forschungsfrage: Welcher Anteil des Kontexts sollte aus RAG-Retrieval vs. \acrshort{LLM}-Parametern stammen? Wie wirkt sich dies auf Antwortqualität und Latenz aus?
+
+\subsection{Systematische Qualitätsbewertung: Über technische Metriken hinaus}
+
+Die Abwesenheit objektiver Audio-Qualitätsmetriken (\acrshort{PESQ}, \acrshort{POLQA}) und Word-Error-Rate-Analysen ist eine methodische Lücke. Zukünftige Arbeiten sollten jedoch nicht nur technische Metriken evaluieren, sondern auch Nutzer-wahrgenommene Qualität: Führt höhere \acrshort{STT}-Genauigkeit tatsächlich zu besserer Dialog-Qualität? Wie tolerant sind Nutzer gegenüber \acrshort{LLM}-Halluzinationen in Voice-Szenarien?
+
+Critical ist die Diversität der Evaluation: Verschiedene Sprecher-Demographien, akustische Umgebungen (stille Büros vs. laute Callcenter), Netzwerkbedingungen (stabile Glasfaser vs. mobile 4G). Dies erfordert umfangreiche Testinfrastruktur -- eine Investition, die für produktive Deployments unerlässlich ist.
+
+\section{Schlussbemerkung}
+
+Diese Arbeit hat die zentrale Forschungsfrage eindeutig beantwortet: Die stabile Integration von \acrshort{SIP}-basierter Telefonie mit cloudbasierten \acrshort{KI}-Sprachverarbeitungsdiensten in containerisierten Umgebungen ist technisch realisierbar und praktisch sinnvoll. Die prototypische Implementierung demonstriert, dass Open-Source-Ansätze nicht nur mit proprietären Voice-\acrshort{AI}-Plattformen konkurrieren können, sondern strategische Vorteile bieten: Vermeidung von Vendor-Lock-in, Datenschutz-gerechte On-Premise-Varianten und domänenspezifische Anpassbarkeit.
+
+Die gemessenen Leistungsmetriken (Median-Latenz 386\,ms \acrshort{WebRTC}-\acrshort{UI}, 766\,ms \acrshort{STT} bei \acrshort{SIP}; 0\,\% Fehlerrate; 11{,}2\,\% \acrshort{CPU}-Auslastung) liegen im akzeptablen Bereich für konversative Telefonie-Anwendungen. Entscheidend ist jedoch die Interpretation: Diese Werte reflektieren nicht technische Grenzen, sondern fundamentale Trade-offs zwischen Modellkomplexität, Latenz und Kosten.
+
+Die iterative Entwicklung offenbarte Meta-Erkenntnisse, die über die spezifische Implementierung hinausgehen: (1) Netzwerkbasierte Audio-Übertragung ist konzeptionell robuster als Hardware-Abstraktion in containerisierten Umgebungen. (2) Framework-Auswahl ist primär Risikominimierung, nicht Performance-Optimierung. (3) Hybrid-Architekturen (lokale Vorverarbeitung + Cloud-\acrshort{KI}) optimieren multiple Dimensionen gleichzeitig.
+
+Die identifizierten Limitationen (begrenzte Stichprobe, kontrollierte Testumgebung, fehlende Diversität) sind transparent dokumentiert und skizzieren einen klaren Pfad für zukünftige Arbeiten. Die prioritären Forschungsrichtungen -- lokale \acrshort{LLM}-Inferenz, Edge-Deployment, multimodale Erweiterung -- adressieren die Lücke zwischen prototypischer Machbarkeit und produktiver Robustheit.
+
+Für Praktiker bietet diese Arbeit konkrete Handlungsempfehlungen: Docker Compose für Entwicklung, Kubernetes für Produktion; \acrshort{VAD}-basiertes Gating zur Kostenoptimierung; stateless \acrshort{VNF}-Design für horizontale Skalierung. Für Forscher definiert sie systematische Forschungslücken, deren Schließung essentiell für die Weiterentwicklung von Voice-\acrshort{AI}-Systemen ist.
+
+Zusammenfassend demonstriert diese Arbeit, dass moderne Voice-\acrshort{AI}-Systeme mit bewährten Telefonie-Protokollen integrierbar sind -- eine Grundlage für die nächste Generation konversativer Sprachsysteme, die Datenschutz, Kosteneffizienz und Anpassbarkeit vereinen.

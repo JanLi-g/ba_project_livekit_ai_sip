@@ -1,0 +1,625 @@
+Quelle: 2503.09905v1.pdf
+Gesamtseiten: 6
+================================================================================
+
+
+--- Seite 1 ---
+arXiv:2503.09905v1  [cs.SD]  12 Mar 2025Quantization for OpenAI’s Whisper Models: A
+Comparative Analysis
+1stAllison Andreyev
+Independent Researcher
+Washington DC, United States
+allisonmandreyev@gmail.com
+Abstract —Automated speech recognition (ASR) models have
+gained prominence for applications such as captioning, spe ech
+translation, and live transcription. This paper studies Wh isper
+and two model variants: one optimized for live speech stream ing
+and another for ofﬂine transcription. Notably, these model s
+have been found to generate hallucinated content, reducing
+transcription reliability. Furthermore, larger model var iants
+exhibit increased latency and pose challenges for deployme nt on
+resource-constrained devices. This study analyzes the sim ilarities
+and differences between three Whisper models, qualitative ly
+examining their distinct capabilities. Next, this study qu antiﬁes
+the impact of model quantization on latency and evaluates it s
+viability for edge deployment. Using the open source LibriS peech
+dataset, this paper evaluates the word error rate (WER) alon g
+with latency analysis of whispercpp using 3 quantization me thods
+(INT4, INT5, INT8). Results show that quantization reduces
+latency by 19% and model size by 45%, while preserving
+transcription accuracy. These ﬁndings provide insights in to the
+optimal use cases of different Whisper models and edge devic e
+deployment possibilities. All code, datasets, and impleme ntation
+details are available in Appendix Sec. A.
+Index Terms —Artiﬁcial Intelligence, Large Language Models,
+Quantization, Automatic Speech Recognition
+I. I NTRODUCTION
+The rise of large language models (LLMs) has enabled
+advancements across multiple communication modalities, i n-
+cluding speech processing. Whisper is an automated speech
+recognition (ASR) system developed by OpenAI, designed for
+applications such as speech transcription, live translati on, and
+captioning [18]. The model has been trained with 680,000
+hours of audio data, far surpassing the magnitude of trainin g
+data used for ASR models. Furthermore, as training data has
+been divvied into 97 total languages, Whisper is compatible
+to act as a translation machine, frequently found to perform
+better than LLM-based ASR models [20]. This robust ap-
+proach has made Whisper one of the leading ASR models in
+both research and practical applications, and allows Whisper
+to be amongst the top performers across many applications of
+speech processing, such as through translation, transcrip tion,
+speech recognition, and zero-shot evaluation [17]. Additi on-
+ally, due to Whisper ’s open support for quantization e.g
+whispercpp –a lightweight model with built in quantization
+features–, it led me to use Whisper as the focus of this
+study [2]. Currently, Whisper contains ﬁve versions: tiny,
+small, base, medium, and large. Due to its accuracy and easy
+of use,Whisper is becoming increasingly popular in bothresearch and commercial applications [12]. However, these
+models are not always accurate when transcribing speech, an d
+some transcriptions have been found to contain hallucinati ons.
+Moreover, larger model variants exhibit increased latency
+and computational demands, making deployment on resource-
+constrained devices more challenging. [10] ﬁnd that roughl y
+1% of audio transcriptions by Whisper contained entire
+hallucinated phrases or sentences, while also ﬁnding 38% of
+hallucinations included harms such as violence, inaccurac ies or
+false authority. While prior research has explored ﬁne-tun ing
+strategies to enhance Whisper ’s performance [6], [8], [11],
+[12], [14], [19], [21], the impact of quantization on model s ize
+reduction and latency optimization remains underexplored .
+A. Contributions and Organization
+This paper addresses this research gap with a few contribu-
+tions:
+•Evaluating the capabilities of Whisper and 2 variants:
+Whisper_Streaming &whisper-timestamped ,
+with an emphasis on their similarities and differences.
+•Establishing and deﬁning quantization techniques and
+relevant hardware considerations applicable to Whisper
+models.
+•A qualitative review on usage between the Whisper and
+Whisper_Streaming &whisper-timestamped
+•Examining model performance in terms of word error
+rate, processing speed, and latency, relative to model size ,
+version, runtime, and quantization approach.
+•Summarizing both qualitative and quantitative results
+from two experimental evaluations.
+I describe current research results and limitations in Sec. II.
+Sec. III qualitatively compares Whisper and its two variant s. In
+Sec. IV, I conduct a model performance experiment, followed
+by a discussion of qualitative results in Sec. V. Sec. VI
+compares the Whisper base model size with its performance on
+the LibriSpeech audio dataset. Sec. VII introduces quantiz ation
+and its applications for Whisper, while Sec. VIII compares t he
+performance of whispercpp based on run type and quantizatio n
+method. Sec. IX evaluates the impact of three quantization
+methods on whispercpp’s accuracy, latency, and model size.
+Finally, Sec. X discusses the practical applications of thi s
+research, with a conclusion in Sec. XI.
+--- Seite 2 ---
+B. Note on Naming Conventions
+In this work, I explore several variants of the Whisper
+model . The naming conventions across these variants, devel-
+oped by external organizations or individuals, are inconsi stent,
+with some adopting different conventions:
+•Whisper : Standard model developed by OpenAI
+•whispercpp : C++ implementation of the Whisper model
+•whisper-timestamped : Version with added timestamping
+functionality
+•Whisper Streaming : Version adapted for streaming
+For consistency in this document, I will refer to these
+variants using the most common or descriptive form of the
+name. Please note that the developers may use different
+naming conventions across various implementations.
+II. L ITERATURE REVIEW
+So far, several studies have been conducted on quantiz-
+ing LLMs and ASR speech transcription. [17] evaluate the
+Whisper model, describing it as an encoder-decoder trans-
+former model, in which a decoder predicts a corresponding
+text caption for each audio segment. They also note that
+Whisper was trained on a large and diverse dataset, which
+explains why its performance on a speciﬁc dataset may not
+be as high as a model trained on only one kind [17]. [20]
+evaluateWhisper model capabilities, and contrast it with
+LLM-based ASR models. [20] explain how LLM-based ASR
+models use a speech encoder to process speech and generate
+embeddings which are passed into a decoder-only LLM. In
+their experimentation, they ﬁnd that the performance of LLM -
+based ASR models correlates positively with the proﬁciency
+of the LLM in the language being recognized, posing a lim-
+itation for LLM based ASR models. Additionally, [1] studies
+Whisper hallucinations in audio transcriptions, noting that
+Whisper has a tendency to generate and produce incorrect
+repetitions of recognized text. Hallucinations refer to th e
+generation of transcriptions that include fabricated or in correct
+information that was not part of the original speech. Their
+experiment ﬁnds several offensive hallucinations produce d in
+data transcription and notes that audio length signiﬁcantl y
+affects the error rate and audio content had minimal relatio n
+on hallucination. [1]. Hallucinations pose a challenge for
+Whisper , however this is a issue that could be addressed with
+model quantization [22], a method which has been previously
+found to decrease the WER, improving model accuracy [22].
+[3] evaluate current quantization strategies, noting that moving
+from FP to INT quantization holds potential to reduce latenc y
+and memory footprint by a factor of 16x. Several studies had
+conducted experiments quantizing ASR models. For example,
+[23] evaluates quantization methods effects on model laten cy,
+ﬁnding that quantization creates faster model inference an d
+allows for model deployment on portable devices, on which
+a stable network connection could be limited. However, the
+study mainly evaluates INT8 quantization, which is only
+one kind of integer quantization and may not speak for all
+methods such as INT4 or INT5, respectively. Meanwhile,[9] discusses quantizing ASR models: they ﬁnd that neural
+network architectures such as Whisper perform poorly on
+edge hardware due to computation requirements, and note
+that prior research on quantizing ASR models is limited.
+Notably, QAT requiring training and validation data during
+quantization may not always be available due to privacy or
+security issues, forming a limitation for quantization mod els
+which require QAT. [22] evaluate quantization methods on
+Whisper accuracy and model size, relying on the P4Q
+quantization strategy, which utilizes block-wise N4 quant i-
+zation applied to the model’s primary weights. The study
+evaluates their methods on 4 quantized Whisper models,
+demonstrating improvement in latency and accuracy, with a
+15.1% WER reduction for quantized Whisper . However,
+similar to [23], this study doesn’t evaluate more than 1
+type of quantization, which limits the experiment in terms
+of deducing a pattern or relationship between quantization
+methods and model performance. Additionally, [23] propose s
+a general quantizer which uses a quantization scheme with
+ﬂoating point (FP) and backward-pass quantization aware
+training (BP-QAT). To evaluate this model, they use Whisper
+and the LibriSpeech dataset and benchmark accuracy using
+a standard WER, ﬁnding it improves by up to 5.7% with
+their quantization methods. This method, however, is only
+evaluated on one model and version of Whisper , so its
+accuracy and results are not conﬁrmed for other sizes. Re-
+search on quantization has found it could bear beneﬁts to
+model accuracy, latency, and deployment opportunities [3] ,
+[9], [22], [23]. Quantizing the model could beneﬁt users who
+don’t have stable internet access, or need to use the model
+on a mobile device. The translation and transcription featu res
+of the model pose as key resources needed by the hard of
+hearing community along with language barriers. However,
+current research is limited in terms of quantization strate gies
+applied, and latency categories studied. Furthermore, up u ntil
+now, few studies have compared Whisper and its variants
+-whisper-timestamped andWhisper_Streaming –
+and the implications of each model individually. By an-
+alyzingWhisper ’s variants, greater insights can be ana-
+lyzed about the model backend and differentiating factors.
+For example, Whisper_Streaming uses self-adaptive la-
+tency [15], possibly affecting how latency is impacted by
+quantization. Meanwhile, whisper-timestamped uses
+a Dynamic Time Warping (DTW) approach (unique to
+whisper-timestamped ) which allows for improved
+timestamp accuracy, while also featuring conﬁdence scores
+for each word. Furthermore, whisper-timestamped is
+able to process longer ﬁles with little additional memory
+usage compared to the Whisper Base model [4], [13]. This
+difference in memory handing and individual word conﬁdence
+scores pose interesting new research directions about this
+model. In all, the Whisper model comparisons can clearly
+conclude on variant applications and limitations, which pl ay a
+key role in further research and development.
+This paper aims to address these limitations by providing
+a comprehensive evaluation of the 3 Whisper variations
+--- Seite 3 ---
+while running a quantization experiment using 3 methods of
+integer quantization with a comprehensive model accuracy
+and latency analysis.
+III. M ODEL COMPARATIVE ANALYSIS
+A. Whisper
+Whisper, developed by OpenAI, is an ASR model capable of
+speech transcription, translation, and language identiﬁc ation.
+When transcribing, the model detects voice activity and att en-
+uates background noise or music. When setting up Whisper ,
+its dependencies PyTorch & ffmpeg command line tool must
+also be installed. OpenAI has recently made an API version
+that can be imported into any Python ﬁle as a module for
+personal modiﬁcation. However, it is noted Whisper is not
+designed for real-time transcription, and is only made to
+process audio with at least 1 full sentence, which is prefera bly
+less than 30 seconds in length.
+B. Whisper Timestamped
+whisper-timestamped is a version of Whisper that
+creates word timestamps and more exact estimations on
+speech segments using a Dynamic Time Warping approach
+[13]. That way, start and end time estimations for speech
+are more accurate and each word is processed individ-
+ually, receiving its own conﬁdence score. By employing
+this approach, whisper-timestamped can process longer
+ﬁles with minimal additional memory overhead. OpenAI of-
+fers a 9GB docker ﬁle and light installation of CPU, and
+whisper-timestamped can also be used as a Python
+module.whisper-timestamped has several output for-
+mats:
+•Outputs data in JSON format with: detailed timestamp
+data, language detection, conﬁdence score
+•CSV , SRT, VTT, TSV ﬁle
+•Into speciﬁed output directory, ’verbose’ mode
+Additionally, computation and conﬁdence scores can be
+enabled and disabled for each word, and the user can choose
+whether punctuation should be committed [5], [15], [17].
+C. Whisper Streaming
+Whisper_Streaming is an optimized variant of
+Whisper designed for real-time speech transcription and
+translation. Typically, Whisper_Streaming can transcribe
+live speech with a 3.3 second latency. On top of dependencies
+required for Whisper ,Whisper_Streaming requires the
+Libra Sound File, a sound processing library, and requires
+installing the Whisper back end and the OpenAI API.
+Whisper_Streaming comes with 4 simulation modes:
+•Start at: Starts processing audio at a time provided by
+user.
+•Ofﬂine : Processes the full audio ﬁle once in ofﬂine mode,
+and then ﬁnds the lowest word error ratio.
+•Comp unaware : Timer that measures processes/events;
+does not count compute time, meant to lower latency
+bounds and get ’true’ latency.•Default usage
+Next, there were a few key similarities and differences
+betweenWhisper_Streaming and the other 2 models.
+Text and debug variables are outputted as soon as that piece
+of the speech is processed, doing the transcription live rat her
+than outputting ﬁnal data at the end. The model takes a sig-
+niﬁcantly longer time to process longer audio; however, sim -
+ilar towhisper-timestamped ,Whisper_Streaming
+offers several customization features in Python ﬁles and th e
+command line, such as an ofﬂine mode, customizing buffer
+timing, when streaming starts, the language used, model,
+and minimum segment size (what size the buffer transcribes
+at a time). Longer audio ﬁles need to be split into small
+pieces and then merged. In low latency streaming mode,
+words can be split in the middle. Unlike the other models,
+Whisper_Streaming does not do sentence segmentation:
+it instead makes word-level timestamps. The model processe s
+the new audio segment twice before ﬁnalizing, updates the
+buffer to the timestamp with conﬁrmed audio segment. Lim-
+its processing buffer window & reprocesses the conﬁrmed
+sentence time stamps before moving on to the next speech
+piece, this is because the objective is to limit buffer size
+and increase efﬁciency for longer audio segments, while sti ll
+ensuring accuracy.
+1) Limitations: Due to lots of terminal output, it was
+difﬁcult to see the full text transcript. Noted, this is miti gated
+however, by the model storing the transcript in a separate tx t
+ﬁle. Based on this output, Whisper_Streaming is not
+ideal for pre-recorded audios due to its buffering method an d
+accumulation of text data, making the terminal harder to sor t.
+Additionally, for increased accuracy, each audio segment h as
+one word processed at a time, which can cause lag in the
+software.
+All can be used as a Python module using its API.
+IV. M ODEL PERFORMANCE EXPERIMENT
+To evaluate the accuracy and latency of the base Whisper
+models, this study utilizes 25 audio ﬁles from the LibriSpee ch
+dataset, comprising both clean and challenging speech samp les
+[16]. All models were executed in a standardized virtual
+environment using Jupyter Notebook on an HP Envy CPU to
+ensure consistency. From this experiment, qualitative res ults
+were derived on the performance of all 3 models relative to
+each other.
+V. Q UALITATIVE RESULTS
+A. Whisper Timestamped
+whisper-timestamped provided additional personal-
+ization compared to Whisper , such as specifying a ﬁle
+output directory. A function in the Python module of
+whisper-timestamped also takes several parameters that
+allow for further customization on the way the speech is
+transcribed. This model breaks off speech into segments, an d
+then segments into words, sharing timestamps and conﬁdence
+--- Seite 4 ---
+scores for each individually. While Whisper provided times-
+tamps for each sentence, whisper-timestamped provided
+a timestamp for each word and conﬁdence score for each
+sentence, phrase, and word, separately. Conﬁdence is rated
+on a scale from 0.00 to 1.0. Notably, the conﬁdence score
+and processing speed stayed the same for the longer and more
+complicated pieces of text. whisper-timestamped also
+has a few unique traits:
+•Features a progress bar at the top of the output, with FPS
+and percentage processed.
+•Output by default is in JSON format.
+•Specifying a language when translating would remove the
+output featuring language probability.
+Between model sizes, the largest model processes text at
+about 400 FPS and the smallest model processes almost 2000
+FPS. Conﬁdence levels increased dramatically for each word
+between the tiny and large models. On average, the base model
+took about 10 seconds to transcribe speech. All models did no t
+interpret intonation to structure sentences and capitaliz ation
+properly.
+B. Whisper
+UsingWhisper without the timestamped feature provided
+me with some timestamps with text that were particularly lon g.
+These timestamps were typically a range of a few seconds (for
+each sentence). By default, the model provided 5 output ﬁles :
+JSON, vtt, srt, txt, tsv All models would use commas, punc-
+tuation, and capitalization correctly, they were able to ap ply
+grammatical rules to a sentence, which differentiated it fr om
+other speech transcription models. For example, a sentence
+such as “Bob’s dogs were happily playing with Cat” would’ve
+translated properly with Whisper [capitalizing ‘C’ in ‘cat’
+to make a name], but may have translated to “Bobs dogs were
+happily playing with cat” on non-AI powered transcription
+devices. The time it took for the models to compute the lan-
+guage and text was the same for the more complex speech as
+the more clean speech. (About 10 seconds for the base model)
+Unlikewhisper-timestamped ,Whisper did not output:
+conﬁdence scores, timestamps for each word, and language
+probability. For both models, performance on the test and
+development set performance was similar. Throughout usage ,
+there were some notable semantics utilized by the model,
+such as intonation to determine capitalization and sentenc e
+structure. The model goes through 2 layers of transcription ,
+and it adjusts transcription as it goes, predictions of text may
+change in a buffer as they’re being double-checked or the nex t
+part is being listened to.
+VI. M ODEL SIZE VS . PERFORMANCE EXPERIMENT
+Using 10 distinct recordings from the ‘test-clear’ and
+‘test-other’ data sets from Librispeech, each audio seg-
+ment was manually timestamped and compared with
+the timestamps provided by Whisper_Streaming and
+whisper-timestamped ’s base versions. Timestamps went
+up to the centiseconds (cs).A. Whisper Streaming
+Whisper_Streaming demonstrated strong accuracy,
+with automatically generated timestamps deviating no more
+than 0.5 seconds from manually recorded ones. However, the
+software would frequently start each timestamp from 0.00s,
+even though the words started being spoken at a later point in
+the audio recording. Additionally, it was a frequent patter n to
+notice the software undercount seconds needed to pronounce a
+phrase, being about 0.2s ahead of human-recorded timestamp s
+most of the time.
+B. Whisper Timestamped
+whisper-timestamped had more distinct times-
+tamps, with each word getting its separate time frame.
+It seemed to have the same level of accuracy as
+Whisper_Streaming when it came to comparing the
+generated timestamps to human-recorded ones. The beneﬁt
+ofwhisper-timestamped overWhisper_Streaming
+was the increased precision of the timestamps and more detai l.
+whisper-timestamped also started off with more accu-
+rate timestamps than Whisper_Streaming , which usually
+started each segment at 0.00s.
+C. Observations
+The following table displays qualiative usage observation s
+withWhisper based on model size.
+TABLE I
+QUALITATIVE WHISPER USAGE EXPERIENCE ON LIBRISPEECH DATASETS
+BASED ON MODEL SIZE AND SPEECH DIFFICULTY
+Model Size Clean Speech Challenging Speech
+Tiny Quick output (¡ 10s), low
+GPU/CPU usage, inaccu-
+racies with larger text or
+names, capitalization is-
+suesMisses small background
+noises, e.g., “They wor-
+shiped” only “worship”
+heard
+Small 10-20s output, best capi-
+talization, good timestamp
+detailsSimilar to Medium, but 2x
+faster
+Medium 20-40s output, similar ac-
+curacy to large modelN/A
+Large Long download (2GB),
+slow processing (up to a
+couple of minutes), punc-
+tuation and capitalization
+issuesModiﬁes structure to be
+grammatically correct
+while matching audio
+more closely
+D. Results
+Whisper_Streaming demonstrated strong accuracy,
+with automatically generated timestamps deviating no more
+than 0.5 seconds from manually recorded ones. The algorithm
+for both models was programmed to detect and check for trail-
+ing sounds like ‘s’ or ‘n’ correctly and performed well again st
+human-labeled timestamps. whisper-timestamped prior-
+itized precision and granularity, albeit at the cost of incr eased
+processing time compared to other models.
+--- Seite 5 ---
+VII. Q UANTIZATION WITH WHISPER
+Quantization involves converting a neural network (NN)
+or large language model (LLM) to a lower-precision format,
+reducing memory requirements for deployment on resource-
+limited devices. Quantization maps continuous input value s
+to discrete levels at the output. Whisper , being an audio
+LLM, has the ability to be quantized to be deployed and
+used on smaller devices with less computing power. Thus, the
+following experiment evaluates whether model accuracy and
+latency are affected positively through quantization tech niques.
+A. Hardware Support for Quantization
+The deployment of quantized models beneﬁts from hard-
+ware accelerators that optimize the efﬁciency of quantizat ion
+tasks. Key hardware platforms include:
+•AMD and ARM CPUs: Support for mixed-precision
+operations and 8-bit integer quantization, with notable
+examples including AMD Zen 4 and ARM Neoverse
+V1/V2 architectures.
+•Apple Silicon and NVIDIA GPUs: Apple’s chips (A17
+Pro, M4) and NVIDIA’s H100 GPU offer enhanced
+support for 8-bit integer quantization and tensor core
+optimization.
+•Intel CPUs and Qualcomm GPUs: Intel Xeon pro-
+cessors feature support for 8-bit integer quantization via
+AMX, while Qualcomm Adreno GPUs provide optimiza-
+tion for mixed-precision tasks.
+VIII. Q UANTIZED WHISPER CPU VS. GPU
+PERFORMANCE
+Using several quantization methods (Q4, Q5, and Q8), the
+baseWhisper model was quantized to compare different
+implementation methods, experiences, accuracy, and obser ved
+differences.
+The following table describes the difference in total run
+time, divided into several components based on quantizatio n
+and runtime type (CPU versus GPU).
+TABLE II
+WHISPER BASELINE VS . QUANTIZED COMPUTE TIMES BASED ON
+HARDWARE
+Timewhispercpp (GPU) whispercpp (CPU)
+Standard Quantized Standard Quantized
+Load 123.58 ms 66.54 ms 162.27 ms 94.51 ms
+Mel 43.29 ms 51.26 ms 80.58 ms 80.88 ms
+Sample 2.03 ms/run 1.47 ms/run 1.84 ms/run 1.87 ms/run
+Encode 4604.79
+ms/run5934.99
+ms/run6468.15
+ms/run8612.49
+ms/run
+Decode 226.40
+ms/run9.75 ms/run 12.56
+ms/run11.16
+ms/run
+Batchd 9.94 ms/run 7.76 ms/run 7.94 ms/run 9.10 ms/run
+Prompt 0.00 ms/run 0.00 ms/run 0.00 ms/run 0.00 ms/run
+Total 6786.58 ms 7414.24 ms 8033.38 ms 10380.28
+msIX. Q UANTIZATION FOR OPTIMIZATION EXPERIMENT
+Next, the experiment evaluates how accuracy and latency
+are affected by the quantization of the Whisper models.
+Reference the Appendix B for hardware speciﬁcations.
+For my audio data, I used the open source Librispeech ASR
+[16] dataset, using the ﬁrst 10 audio ﬁles provided. These
+audio transcriptions then determine how quantization meth ods
+(Q4, Q5, Q8) affect model speed and accuracy. This study
+evaluates the WER and accuracy using [7], a model which
+uses components of huggingface-evaluate and openai-whisp er
+projects for WER calculation. The following table records k ey
+observations:
+TABLE III
+WER, M ODEL SIZE,AND LATENCY BASED ON QUANTIZATION METHOD
+Metric Whisper CPP Base Model INT5 INT4 INT8
+Word Error Rate 0.0199 0.0199 0.0159 0.0199
+Accuracy 98.0% 98.0% 98.4% 98.0%
+Model Size 141.11MB 52.75MB 44.33MB 77.99MB
+Avg Latency 10.64s 11.11s 10.55s 9.02s
+X. A PPLICATIONS
+The results of this study could have profound implications
+for resource-constrained environments, such as mobile dev ices,
+IoT, and embedded systems. By reducing the memory footprint
+and maintaining high accuracy, quantized Whisper models
+could provide real-time transcription services, enable lo w-
+latency captioning, and improve accessibility for users wi th
+hearing impairments. The deployment of the Whisper models
+onto portable devices sets a high benchmark for transcripti on,
+translation, and speech detection services available for c om-
+mercial use.
+XI. C ONCLUSION
+The study concludes that quantization is a viable method
+for reducing model size and improving deployment efﬁciency
+without sacriﬁcing accuracy or latency. This experiment re -
+duces model size by up to 45% while maintaining the same
+WER and decreasing latency by 19%. These results support
+the feasibility of Whisper on smaller devices, suggesting that
+Whisper can be effectively deployed on resource-limited de-
+vices such as smartphones and IoT systems, making real-time
+ASR more accessible and efﬁcient. Extending this research
+to other ASR models could enhance the scalability of audio-
+based AI applications. Future work could explore additiona l
+quantization techniques, optimize hardware deployment st rate-
+gies, and investigate trade-offs in real-time performance . As
+ASR models scale, optimizing the trade-off between accurac y,
+efﬁciency, and real-time performance will be critical for n ext-
+generation AI deployment.
+REFERENCES
+[1] M. Bara´ nski, J. Jasi´ nski, J. Bartolewska, S. Kacprzak , M. Witkowski,
+and K. Kowalczyk. Investigation of whisper asr hallucinati ons induced
+by non-speech audio, 2025.
+[2] G. Gerganov. ggerganov/whisper.cpp: Port of openai’s w hisper model
+in c/c++.
+--- Seite 6 ---
+[3] A. Gholami, S. Kim, Z. Dong, Z. Yao, M. W. Mahoney, and K. Ke utzer.
+A survey of quantization methods for efﬁcient neural networ k inference,
+2021.
+[4] T. Giorgino. Computing and visualizing dynamic time war ping align-
+ments in r: The dtw package. Journal of Statistical Software , 31(7),
+2009. doi: 10.18637/jss.v031.i07
+[5] T. Giorgino. Computing and visualizing dynamic time war ping align-
+ments inr: ThedtwPackage. J. Stat. Softw. , 31(7), 2009.
+[6] C. Graham and N. Roll. Evaluating openai’s whisper asr: P erformance
+analysis across diverse accents and speaker traits. JASA Express Letters ,
+4(2):025206, 02 2024. doi: 10.1121/10.0024876
+[7] ins8ai. Ins8ai/wer: Word error rate computation using c omponents from
+huggingface-evaluate and openai-whisper projects, Oct 20 23.
+[8] J. Johansson. Automatic Word Decoding Assessment Using Whisper
+and Machine Learning Techniques: An Automatic Speech Recog nition
+Method to Assess the Early Reading Abilities of Young Childr en Reading
+Swedish . Dissertation, KTH Royal Institute of Technology, 2024.
+[9] S. Kim, A. Gholami, Z. Yao, N. Lee, P. Wang, A. Nrusimha, B. Zhai,
+T. Gao, M. W. Mahoney, and K. Keutzer. Integer-only zero-sho t
+quantization for efﬁcient speech recognition. In ICASSP 2022 - 2022
+IEEE International Conference on Acoustics, Speech and Sig nal Pro-
+cessing (ICASSP) , pp. 4288–4292, 2022. doi: 10.1109/ICASSP43922.
+2022.9747552
+[10] A. Koenecke, A. S. G. Choi, K. X. Mei, H. Schellmann, and M . Sloane.
+Careless whisper: Speech-to-text hallucination harms. In Proceed-
+ings of the 2024 ACM Conference on Fairness, Accountability , and
+Transparency , FAccT ’24, p. 1672–1681. Association for Computing
+Machinery, New York, NY , USA, 2024. doi: 10.1145/3630106.3 658996
+[11] Y . Liu and D. Qu. Parameter-efﬁcient ﬁne-tuning of whis per for low-
+resource speech recognition. In 2024 5th International Seminar on
+Artiﬁcial Intelligence, Networking and Information Techn ology (AINIT) ,
+pp. 1522–1525, 2024. doi: 10.1109/AINIT61980.2024.10581 773
+[12] Y . Liu, X. Yang, and D. Qu. Exploration of whisper ﬁne-tu ning strategies
+for low-resource asr. Journal of Audio, Speech, and Music Processing ,
+2024:29, 2024. doi: 10.1186/s13636-024-00349-3
+[13] J. Louradour. whisper-timestamped.
+https://github.com/linto-ai/whisper-timestamped, 202 3.
+[14] H. Ma, Z. Peng, M. Shao, J. Li, and J. Liu. Extending whisp er with
+prompt tuning to target-speaker asr. In ICASSP 2024 - 2024 IEEE
+International Conference on Acoustics, Speech and Signal P rocessing
+(ICASSP) , pp. 12516–12520, 2024. doi: 10.1109/ICASSP48485.2024.
+10447492
+[15] D. Mach´ aˇ cek, R. Dabre, and O. Bojar. Turning whisper i nto real-time
+transcription system. In S. Saha and H. Sujaini, eds., Proceedings of
+the 13th International Joint Conference on Natural Languag e Processing
+and the 3rd Conference of the Asia-Paciﬁc Chapter of the Asso ciation
+for Computational Linguistics: System Demonstrations , pp. 17–24. As-
+sociation for Computational Linguistics, Bali, Indonesia , Nov. 2023. doi:
+10.18653/v1/2023.ijcnlp-demo.3
+[16] V . Panayotov, G. Chen, D. Povey, and S. Khudanpur. Libri speech: an
+asr corpus based on public domain audio books. In Acoustics, Speech
+and Signal Processing (ICASSP), 2015 IEEE International Co nference
+on, pp. 5206–5210. IEEE, 2015.
+[17] A. Radford, J. W. Kim, T. Xu, G. Brockman, C. McLeavey, an d
+I. Sutskever. Robust speech recognition via large-scale we ak supervision.
+arXiv preprint arXiv:2212.04356 , 2022.
+[18] N. Rao, S. O’Riordan, and J. Coulis. Ai and labor: Cap-
+tioning library audiovisual content with whisper. IFLA Journal ,
+0(0):03400352241310534, 2025. doi: 10.1177/03400352241 310534
+[19] S. Rijal, S. Adhikari, M. Dahal, M. Awale, and V . Ojha. Wh isper
+ﬁnetuning on nepali language, 2024.
+[20] Z. Song, Z. Ma, Y . Yang, J. Zhuo, and X. Chen. A comparativ e study of
+llm-based asr and whisper in low resource and code switching scenario,
+2024.
+[21] V . Timmel, C. Paonessa, R. Kakooee, M. V ogel, and D. Perr uchoud.
+Fine-tuning whisper on low-resource languages for real-wo rld applica-
+tions, 2024.
+[22] Q. Zhao, G. Sun, C. Zhang, M. Xu, and T. F. Zheng. Speaker a daptation
+for quantised end-to-end asr models, 2024.
+[23] K. Zhen, M. Radfar, H. D. Nguyen, G. P. Strimel, N. Susanj , and
+A. Mouchtaris. Sub-8-bit quantization for on-device speec h recognition:
+a regularization-free approach, 2022.APPENDIX
+A.
+https://github.com/allisonandreyev/WhisperQuantizat ion
+B.
+Cpuinfo Version: 9.0.0
+Brand Raw: Intel(R) Xeon(R) CPU @ 2.20GHz
+Hz Advertised Friendly: 2.2000 GHz
+Hz Actual Friendly: 2.2000 GHz
+Hz Advertised: (2200000000, 0)
+Hz Actual: (2199998000, 0)
+Arch: X86 64
+Bits: 64
+Count: 2
+Arch String Raw: x86 64
+L1 Data Cache Size: 32768
+L1 Instruction Cache Size: 32768
+L2 Cache Size: 262144
+L2 Cache Line Size: 256
+L2 Cache Associativity: 6
+L3 Cache Size: 57671680

@@ -1,0 +1,219 @@
+% Kapitel 6: Evaluation
+% Ergebnisse der SIP-Integration.
+\chapter{Evaluation}
+\label{chap:evaluation}
+
+In dieser Evaluation werden lediglich Tests aus der \gls{gls-SIP}-Integration behandelt. Eine quantitative Auswertung der Web\gls{gls-UI} selbst ist nicht das Ziel der Evaluation.
+
+\section[SIP-Evaluation]{\gls{gls-SIP}-Evaluation}
+Die \gls{gls-SIP}-Anbindung wurde im Gegensatz zur Web\gls{gls-UI} detailliert verfolgt und ausgewertet. Die Signalisierungsebene und der Medienpfad funktionieren stabil: \gls{gls-SIP}-Trunk-Registration beim Provider, Zuteilungsregeln und die automatische Raumerstellung greifen zuverlässig. Eingehende Anrufe werden korrekt erkannt und an den \gls{gls-KI}-Agenten weitergeleitet.
+
+Nach den durchgeführten \gls{gls-SIP}-Testanrufen zeigt sich, dass:
+
+\begin{itemize}
+  \item Bidirektionale Audioübertragung ohne \gls{gls-RTP}-Timeout erfolgt
+  \item Mehrfache Gesprächsumläufe stabil verarbeitet (keine Abbrüche oder Timeouts)
+  \item Anrufer Begrü\ss ung und Sprachausgabe des Agents deutlich empfangen
+  \item Audio-Qualität und Latenz im erwarteten Bereich liegen
+\end{itemize}
+
+\subsection{Integration, Durchführung und Testszenarien}
+
+Die \gls{gls-SIP}-Integration wurde in einer kontrollierten \gls{gls-LAN}-Umgebung mit Docker Desktop betrieben, während die Testanrufe selbst über das öffentliche Mobilfunknetz (Telekom) durchgeführt wurden. Aus der Gesamtheit der Testanrufe wurden exemplarisch 5 Anrufe für eine detaillierte Analyse ausgewählt. Die folgenden Beispiele zeigen die Vielfalt der getesteten Szenarien:
+
+\begin{itemize}
+  \item \textbf{Anruf 1:} Fragen zu physikalischen Dimensionen (Fu\ss ballfeld, Handball-Umfang): 3 Turns, 54,97s Dauer
+  \item \textbf{Anruf 2:} Geographie und Zeitberechnungen (tiefste Meeresstelle): 3 Turns, 56,75s Dauer
+  \item \textbf{Anruf 3:} Infrastruktur-Fragen (Deutsche Autobahnen): 3 Turns, 49,0s Dauer
+  \item \textbf{Anruf 4:} Tier-Rekorde (schnellstes/langsamstes Tier): 4 Turns, 46,96s Dauer
+  \item \textbf{Anruf 5:} Technologie-Abkürzungen (IT-Bereiche): 3 Turns, 37,96s Dauer
+\end{itemize}
+
+Die Testanrufe wurden bewusst mit unterschiedlicher Komplexität und Anzahl an Turns gestaltet , um eine Varianz in der Ergebnisdarstellung zu erreichen. Alle Anrufe wurden regulär durch Auflegen des Anrufers beendet (CLIENT\_INITIATED disconnect).
+
+\subsection{Metriken und Analyse}
+
+Aus den durchgeführten Testanrufen wurden fünf Anrufe für eine detaillierte Metrikanalyse ausgewählt. Sitzungen ohne Turns (z.\,B. kurz abgebrochene Rufaufbauten durch die Testperson) wurden von der Aggregation ausgeschlossen.
+
+Zur qualitativen Einordnung der \gls{gls-STT}-Robustheit werden exemplarisch die in den Logs erkannten Nutzerfragen der fünf Testanrufe aufgeführt; dabei ist eine einzelne Fehlinterpretation sichtbar, die die Grenzen der Erkennung in Telefonszenarien verdeutlicht:
+\begin{itemize}
+  \item \textbf{Anruf 1 (Physikalische Dimensionen):} „Hallo, wie groß ist ein Fu\ss ballfeld?“, „Gib mir den Umfang für einen Handball.“, „Danke.“
+  \item \textbf{Anruf 2 (Geographie/Zeiten):} „Gib mir die tiefste Stelle im Meer.“, „Wie lange würde es dauern, dort hinunterzutauchen?“, „Danke.“
+  \item \textbf{Anruf 3 (Infrastruktur):} „Wie lang ist die längste Autobahn in Deutschland?“, „Welche ist die kürzeste?“, „Danke.“
+  \item \textbf{Anruf 4 (Tier-Rekorde):} „Welches ist das schnellste Tier der Welt?“, \textit{„Welche Systemstelle?“} (Fehlinterpretation), „Das Langsamste.“, „Danke.“
+  \item \textbf{Anruf 5 (Technologie-Abkürzungen):} „Was ist die Abkürzung IT?“, „Gib mir einen Bereich davon.“, „Danke.“
+\end{itemize}
+
+Die folgende Tabelle~\ref{tab:sip-metriken-aggregiert} zeigt die aggregierten Messwerte über diese fünf exemplarischen Testanrufe hinweg:
+
+\begin{table}[H]
+  \centering
+  \begin{tabular}{|l|c|c|c|c|}
+    \hline
+    \textbf{Metrik} & \textbf{Mittelwert} & \textbf{Median} & \textbf{Min} & \textbf{Max} \\ \hline
+    Anruf-Dauer (in s) & 49,13 & 49,00 & 37,96 & 56,75 \\ \hline
+    Turns pro Anruf & 3,2 & 3 & 3 & 4 \\ \hline
+    STT-Latenz (Ø in s) & 0,86 & 0,78 & 0,52 & 1,19 \\ \hline
+    Transcript-Delay (Ø in s) & 1,30 & 1,31 & 1,05 & 1,74 \\ \hline
+    TTS-Latenz (Ø in s) & 1,45 & 1,41 & 1,15 & 1,83 \\ \hline
+    Gesamt Audio (s) & 21,15 & 22,35 & 10,73 & 26,78 \\ \hline
+    Audio-Bytes (Ø in KiB) & 495,6 & 523,7 & 251,6 & 627,6 \\ \hline
+  \end{tabular}
+  \caption{Aggregierte Metriken und Latenzen der \gls{gls-SIP}-Tests}
+  \label{tab:sip-metriken-aggregiert}
+\end{table}
+
+% --- SIP-Aggregat: Kurzverweis auf Statistik, Fokus auf Netzwerk- und Protokollaspekte ---
+Die Analyse der aggregierten Daten zeigt konsistente Leistungswerte über die fünf detailliert ausgewerteten Testanrufe hinweg. Die \gls{gls-STT}-Latenz variiert zwischen 0,52 s im besten Fall und 1,19 s bei längeren Prompts. Im \gls{gls-SIP}-Kontext treten zusätzliche Latenzen durch Netzwerk- und Protokollaspekte auf, insbesondere bei der Transkriptverzögerung, die mit durchschnittlich 1,30 s deutlich über der reinen \gls{gls-STT}-Latenz liegt \parencite{ITU-T-G114}.
+
+Die \gls{gls-TTS}-Latenz bleibt mit durchschnittlich 1,45 s über alle Anrufe hinweg konsistent \parencite{openai_whisper_docs}. Die durchschnittlich verarbeiteten Audiodaten pro Anruf liegen mit rund 496 KiB im niedrigen Kilobyte-Bereich. Dies entspricht den Empfehlungen für effiziente Sprachübertragung mit modernen Codecs wie Opus \parencite{rfc6716}.
+
+\subsection{Detailanalyse von Testanrufen}
+
+Zur tieferen Einordnung werden im Folgenden die Kennzahlen der fünf exemplarisch ausgewählten Testanrufe dargestellt (Tabelle~\ref{tab:sip-calls-detail}):
+
+\begin{table}[H]
+  \centering
+  \small
+  \begin{tabular}{|l|c|c|c|c|c|}
+    \hline
+    \textbf{Metrik} & \textbf{Anruf 1} & \textbf{Anruf 2} & \textbf{Anruf 3} & \textbf{Anruf 4} & \textbf{Anruf 5} \\ \hline
+    Dauer (in s) & 54,97 & 56,75 & 49,00 & 46,96 & 37,96 \\ \hline
+    Turns (Anzahl) & 3 & 3 & 3 & 4 & 3 \\ \hline
+    STT-Durchschnitt (in s) & 1,19 & 0,77 & 0,52 & 1,07 & 0,78 \\ \hline
+    TTS-Durchschnitt (in s) & 1,83 & 1,58 & 1,29 & 1,15 & 1,41 \\ \hline
+    Audio (in s) & 25,07 & 26,78 & 22,35 & 20,81 & 10,73 \\ \hline
+    Bytes (in KiB) & 587,6 & 627,6 & 523,7 & 487,7 & 251,6 \\ \hline
+    STT-Fehlinterpretationen (Anzahl) & 0 & 0 & 0 & 1 & 0 \\ \hline
+  \end{tabular}
+  \caption{Detaillierte Metriken der \gls{gls-SIP}-Tests}
+  \label{tab:sip-calls-detail}
+\end{table}
+
+% --- Detailanalyse: Fokus auf Gesprächsdynamik und Nutzerverhalten ---
+Die Detailanalyse der einzelnen Anrufe zeigt Unterschiede in den gemessenen Leistungsmetriken. In Anruf 4 trat eine einzelne Fehlinterpretation des Transkripts auf, während in den übrigen Anrufen keine weiteren Auffälligkeiten dokumentiert wurden. Anruf 1 und Anruf 4 weisen höhere \gls{gls-STT}-Latenzen auf (1,19 s bzw. 1,07 s), während Anruf 3 mit 0,52 s die geringste \gls{gls-STT}-Latenz erreicht. Die \gls{gls-TTS}-Latenz variiert zwischen 1,15 s und 1,83 s.
+
+Anruf 5 weist mit einer Gesamtdauer von 37,96 s sowie der geringsten Audiodatenmenge (10,73 s und 257,6 KiB) die niedrigsten Werte auf. Die beobachteten Unterschiede verdeutlichen die Variabilität der Systemmetriken zwischen einzelnen Gesprächen, deren Länge und der Anzahl Turns \parencite{Data2025_AIDataQuality,ssrn5348245}.
+
+\subsection{Dialogbasierte Latenzanalyse}
+
+Um die Konsistenz der Leistung innerhalb einzelner Gespräche zu bewerten, wurde eine dialogbasierte Analyse durchgeführt (Tabelle~\ref{tab:turn-latencies}):
+
+\begin{table}[H]
+  \centering
+  \begin{tabular}{|l|c|c|c|c|}
+    \hline
+    \textbf{Anruf} & \textbf{Turn 1 STT (s)} & \textbf{Turn 2 STT (s)} & \textbf{Turn 3 STT (s)} \\ \hline
+    Anruf 1 & 1,02 & 2,10 & 0,46  \\ \hline
+    Anruf 2 & 0,84 & 0,91 & 0,55  \\ \hline
+    Anruf 3 & 0,82 & 0,38 & 0,35  \\ \hline
+    Anruf 4 & 1,07 & 0,81 & 1,80  \\ \hline
+    Anruf 5 & 0,68 & 1,10 & 0,54  \\ \hline
+  \end{tabular}
+  \caption{Dialogbasierte Latenzanalyse einzelner \gls{gls-SIP}-Tests}
+  \label{tab:turn-latencies}
+\end{table}
+
+% --- dialogbasiert: Fokus auf Schwankungen und Robustheit, keine Wiederholung der Statistik-Argumentation ---
+Die dialogbasierte Analyse offenbart eine erhebliche Varianz der \gls{gls-STT}-Latenz innerhalb einzelner Anrufe. In Anruf 1 steigt die Latenz im zweiten Turn auf 2,10 s an, sinkt jedoch im dritten Turn wieder auf 0,46 s ab. Anruf 4 weist mit 1,80 s im dritten Turn eine besonders hohe Varianz auf. Im Gegensatz dazu bleibt Anruf 3 durchgehend konsistent und unterschreitet in allen Turns die 0,85 s. Die Ratio zwischen dem schnellsten und dem langsamsten Turn liegt bei 6,1:1 (0,35 s vs 2,10 s), was im erwartbaren Bereich für cloudbasierte \gls{gls-KI}-Dienste liegt \parencite{whisper_quant_2025,ITU-T-G114}.
+
+Alle Turns wurden erfolgreich verarbeitet, ohne dass Timeouts auftraten. Eine Fehlinterpretation wurde in Anruf 4 dokumentiert.
+
+\subsection{Audioqualität und Medienpfad-Stabilität}
+
+Die Stabilität des Medienpfads wurde durch kontinuierliche bidirektionale Audioübertragung über die gesamte Anrufdauer nachgewiesen. Folgende qualitative Beobachtungen wurden während aller \gls{gls-SIP}-Testanrufe dokumentiert:
+
+\begin{itemize}
+  \item \textbf{Codec:} Opus 48 kHz, 24 kbps \parencite{rfc6716}
+  \item \textbf{Paketverlust:} In \gls{gls-RTP}-Statistiken/LiveKit-Logs keine Paketverluste beobachtet
+  \item \textbf{Jitter:} Stabile Audioausgabe ohne starke Verzögerungen
+  \item \textbf{Echo:} Keine Echo-Bildung beobachtet (subjektive Wahrnehmung)
+  \item \textbf{Verständlichkeit:} Subjektiv geschätzte \gls{gls-MOS} Werte von 4,0--4,5 / 5,0 (gut bis sehr gut)
+  \item \textbf{\gls{gls-RTP}-Timeout:} Kein Auftreten bei allen Testanrufe
+\end{itemize}
+
+% --- Audioqualität: Fokus auf subjektive und objektive Bewertung, Codec, Netzwerkstabilität ---
+Die konsistente Audioqualität über alle Testanrufe hinweg bestätigt die Stabilität des Medienpfads. Die \gls{gls-MOS}-Einschätzung ist subjektiv und basiert nicht auf standardisierten ITU-T-Hörversuchen. Neben der technischen Stabilität ist insbesondere die subjektive Verständlichkeit ein zentrales Qualitätsmerkmal für den Praxiseinsatz \parencite{ITU-T-G114}. Die Nutzung des Opus-Codecs und das Fehlen von Paketverlusten oder Jitter unterstreichen die objektive und subjektive Güte der Audioübertragung \parencite{rfc6716}.
+
+\section{Hypothesenbezogene Evaluationsergebnisse}
+\label{sec:hypothesen-resultate}
+
+Die erhobenen Daten ermöglichen eine direkte Prüfung der in Kapitel~\ref{chap:einleitung} formulierten Hypothesen. Im Folgenden werden die Ergebnisse kurz dokumentiert, ohne inhaltliche Interpretation:
+
+\paragraph{H1 (Funktionalität):} Gestützt durch Daten.
+\begin{itemize}
+  \item Keine funktionellen Fehler oder \gls{gls-RTP}-Timeouts über alle Testanrufe
+  \item Eine \gls{gls-STT}-Fehlinterpretation wurde dokumentiert (Anruf 4)
+  \item Bidirektionale Audioübertragung ohne Medienpfad-Fehler
+  \item Alle Verbdindungsabbrüche regulär durch Auflegen des Anrufers (CLIENT\_INITIATED)
+\end{itemize}
+
+\paragraph{H2 (Latenz):} Gestützt durch Daten.
+\begin{itemize}
+  \item \gls{gls-STT}-Latenz: Ø 0,86\,s (Median: 0,78\,s, Spanne: 0,52--1,19\,s)
+  \item \gls{gls-TTS}-Latenz: Ø 1,45\,s (Median 1,41\,s, Spanne: 1,15--1,83\,s)
+  \item Transkriptverzögerung: Ø 1,30\,s
+\end{itemize}
+
+\paragraph{H3 (Ressourceneffizienz):} Gestützt durch Daten.
+\begin{itemize}
+  \item \gls{gls-CPU}-Auslastung: Ø 11{,}2\,\% (Max. 26\,\%)
+  \item\gls{gls-RAM}-Nutzung: 11{,}2--12{,}1\,GB bei verfügbaren 16\,GB
+\end{itemize}
+
+\paragraph{H4 (Skalierbarkeit):} Gestützt durch Architekturdesign.
+\begin{itemize}
+  \item Modulare Komponentenstruktur
+  \item Flexible Ressourcenzuteilung durch Containerbasierung
+  \item Reserve in \gls{gls-CPU} und \gls{gls-RAM} für Erweiterbarkeit
+\end{itemize}
+
+\paragraph{H5 (STT-Robustheit):} Qualitativ gestützt durch Daten.
+\begin{itemize}
+  \item Die Mehrheit der deutschsprachigen Testprompts wurde korrekt erkannt
+  \item Eine einzelne Fehlinterpretation wurde dokumentiert (Anruf 4)
+  \item Es wurden keine systematischen Transkriptionsfehler dokumentiert
+  \item Eine quantitative Messung der Word-Error-Rate wurde nicht durchgeführt
+\end{itemize}
+
+\section{Bedrohungen der Validität}
+\label{sec:threats-to-validity}
+
+Die Validität der Evaluationsergebnisse unterliegt mehreren Einschränkungen, die bei der Interpretation der Daten berücksichtigt werden müssen.
+
+\subsection{Interne Validität}
+\textbf{Stichprobengrö\ss e:}\\
+Die Evaluation basiert auf \gls{gls-SIP}-Testanrufen, wovon fünf Anrufe detailliert analysiert wurden. Für produktive Systeme wären grö\ss ere Testszenarien erforderlich, um statistische Signifikanz zu gewährleisten. Dies ist für das hier getestete prototypische System nicht umgesetzt.
+
+\textbf{Testszenario-Diversität:}\\
+Die Tests wurden in einem mit Docker betriebenen System in einer kontrollierten \gls{gls-LAN}-Umgebung durchgeführt, wobei die \gls{gls-SIP}-Anrufe über eine Mobilfunk-Verbindung initiiert wurden. Andere Architekturen können abweichende Ergebnisse liefern.
+
+\textbf{Prompt-Komplexität:}\\
+Die verwendeten Testprompts decken Themen des Allgemeinwissen ab (Geographie,
+Physik, Technologie). Domänenspezifische Fachsprache oder stark akzentuierte Aussprache könnte die \gls{gls-STT}-Genauigkeit beeinflussen.
+
+\subsection{Externe Validität}
+\textbf{Hardware-Abhängigkeit:}\\
+Die Messungen wurden auf einem spezifischen Testsystem (16\,GB \gls{gls-RAM},
+8 Kerne) durchgeführt. Die Übertragbarkeit auf andere Hardware-Konfigurationen (z.\,B. ARM-Architekturen, Cloud-Instanzen) ist nicht geprüft.
+
+\textbf{Cloud-\gls{gls-API}-Variabilität:}\\
+Die gemessenen Latenzen für \gls{gls-STT} und
+\gls{gls-TTS} hängen von der Auslastung der OpenAI-Server und der geografischen Distanz ab. Wiederholte Messungen zu anderen Zeitpunkten oder von anderen Standorten könnten abweichende Werte liefern.
+
+\textbf{Telefonanbieter-Spezifika:}\\
+Die \gls{gls-SIP}-Tests erfolgten mit einem spezifischen Provider und einem dazugehörigen \gls{gls-SIP}-Trunk. Andere Provider könnten abweichende Codec-Unterstützung oder Netzwerkcharakteristika aufweisen.
+
+\subsection{Konstrukt-Validität}
+\textbf{Subjektive \gls{gls-MOS}-Bewertung:}\\
+Die \gls{gls-MOS}-Werte basieren auf subjektiver Einschätzung ohne standardisiertes \gls{gls-ITU-T}-Testprotokoll. Eine objektive Messung mittels \gls{gls-PESQ} oder \gls{gls-POLQA} ist nicht Bestandteil der Hypothesen dieser Arbeit.
+
+\textbf{Word-Error-Rate-Messung:}\\
+Die qualitative Beobachtung, dass alle Prompts korrekt erkannt wurden, ersetzt keine quantitative Messung der Word-Error-Rate mit Referenztranskripten. Dies ist kein Bestandteil der Hypothesen dieser Arbeit.
+
+\subsection{Reliabilität}
+\textbf{Reproduzierbarkeit:}\\
+Alle Tests sind durch die bereitgestellten Komponenten und deren Konfigurationen reproduzierbar. Die Cloud-\gls{gls-API}-Abhängigkeit führt jedoch zu nicht-deterministischen Latenzen bei Wiederholungen.
+
+\textbf{Logging-Präzision:}\\
+Die Messungen der Latenzen basieren auf Log-Zeitstempeln mit Millisekunden-Präzision. Systematische Logging-Verzögerungen, die durch Region oder Systemabhängigkeiten entstehen, könnten die Messungen verfälschen.

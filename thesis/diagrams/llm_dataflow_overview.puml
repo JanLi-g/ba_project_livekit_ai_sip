@@ -1,0 +1,55 @@
+@startuml
+' Compact privacy-focused overview for Ethics/Privacy section
+skinparam dpi 120
+skinparam nodesep 40
+skinparam ranksep 30
+skinparam defaultFontSize 10
+left to right direction
+
+actor "Caller" as Caller
+rectangle "SIP / Asterisk\n(Signaling)" as SIP
+rectangle "Media Bridge\n(Transcode)" as Bridge
+cloud "LLM / ASR / TTS\n(May be external)" as LLM
+database "Audit / Storage\n(transcripts, metrics, CDRs)" as Store
+rectangle "Orchestrator\n(ARI/AMI)" as Orchestrator
+
+' Main media flows (compact) - use bi-directional arrows for media (RTP)
+Caller <-> SIP
+note left of SIP
+  RTP (full-duplex)
+end note
+
+SIP <-> Bridge
+note left of Bridge
+  RTP
+end note
+
+Bridge <-> LLM
+note left of LLM
+  audio (PCM16 @16k) / TTS (bi-directional)
+  (optional VAD)
+end note
+
+' Storage (clear single-direction flows)
+LLM -[#006400]-> Store : transcripts
+Bridge -[#006400]-> Store : metrics
+SIP -[#006400]-> Store : CDRs
+Orchestrator -[#006400,dashed]-> Store : audit events
+
+' Control plane
+LLM -[#0000FF,dashed]-> Orchestrator
+Orchestrator -[#0000FF,dashed]-> SIP
+
+' Trust boundary note (compact)
+note right of LLM
+  Trust boundary: treat external LLMs as third-party.
+  Apply DPA, encryption in transit & at rest, minimal retention.
+end note
+
+' Short legend - clarify duplex meaning
+note bottom
+  Legend: arrows = data flows; dashed blue = control/API; green = stored data
+  "full-duplex" = simultaneous bi-directional media streams (RTP both directions)
+end note
+
+@enduml

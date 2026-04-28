@@ -1,0 +1,101 @@
+\chapter{Marktanalyse}\label{chap:marktanalyse}
+
+% Helfer-Makros und Spaltentyp (werden hier definiert, damit sie vor Nutzung verfügbar sind)
+\newcommand{\vendor}[3]{\noindent\raisebox{-0.1\height}{\includegraphics[height=7mm]{#1}}\hspace{0.6em}\textbf{#2}. #3\par\vspace{3pt}}
+\newcommand{\vendorText}[2]{\noindent\textbf{#1}. #2\par\vspace{3pt}}
+\newcommand{\providerlogo}[1]{\raisebox{0pt}[0pt][0pt]{\includegraphics[height=6mm]{#1}}}
+\newcolumntype{Y}{>{\centering\arraybackslash}X}
+\newcolumntype{L}{>{\raggedright\arraybackslash}X}
+\newcolumntype{C}[1]{>{\centering\arraybackslash}m{#1}}
+
+Diese Kurzanalyse richtet sich an \gls{gls-KMU} in \gls{gls-DACH}. Vor allem werden Unternehmen aus diesen Regionen adressiert, die \gls{gls-KI}-basierte Telefonsysteme mit \gls{gls-SIP}-Integration einführen möchten und dabei volle Datenschutzkontrolle bewahren müssen.
+
+Zur Realisierung stehen drei grundsätzliche Bereitstellungsmodelle zur Verfügung:(1) Cloudbasierte Lösungen für schnellen Markteintritt, (2) Hybrid-Ansätze mit lokal- und teilweise in Cloud-Systeme ausgelagerten Dienste, (3) Vollständig selbstgehostete Systeme für maximale Kontrolle und \gls{gls-DSGVO}-Konformität \parencite{Antonova2025}. Solche Modelle und deren Unterschiede werden auch international diskutiert, etwa in systematischen Übersichten und aktuell produktiven Umgebungen \parencite{Todorov2025LLMDispatcher,Ngobeni2025AIVoIP}. Die Wahl zwischen diesen Modellen impliziert Trade-offs zwischen Flexibilität, Compliance und Betriebskomplexität.
+
+Um Anbieter von \gls{gls-KI}-basierten Telefonsystemen und deren Funktionsumfänge überhaupt vergleichen zu können, muss zunächst klar sein, welche Anforderungen für einen produktiven Betrieb unverzichtbar sind. In der klassischen IP-Telefonie sind das standardisierte \gls{gls-PBX}-Funktionen. Einige Beispiele dafür sind: \gls{gls-SIP}-Registrierung, bidirektionales In-/Outbound-Routing, \gls{gls-DTMF} oder Verarbeitung für \gls{gls-IVR}-Menüs \parencite{rfc3261}. Im Einsatz von \gls{gls-KI}-basierten Telefonsystemen sind andere Eigenschaften notwendig: \gls{gls-WebRTC}/\gls{gls-RTP}-Kompatibilität, Barge-in-Fähigkeiten und transparente Transkodierung (G.711 \Leftrightarrow\ Opus) \parencite{rfc6716}. Die Integration von \gls{gls-KI} birgt einige Herausforderungen, die entscheiden, ob ein System für viele tausend Anrufe täglich stabil funktioniert, eine gute Nutzererfahrung bietet und somit auch die Produktivität in Unternehmen und deren Prozessen steigert. In Systemen, die klassische Protokolle, Technologien und Funktionen mit modernen Standards verknüpfen, müssen die genannten Aspekte im Zusammenspiel implementiert werden. Internationale Studien zeigen, dass diese Herausforderungen und Lösungsansätze in verschiedenen Märkten ähnlich sind \parencite{Todorov2025LLMDispatcher,Ngobeni2025AIVoIP}.
+\clearpage
+\section{Integrationsaufwand }
+
+Der Integrationsaufwand für \gls{gls-KI}-basierte Telefonsysteme variiert je nach Anbieter und Bereitstellungsmodell deutlich. Gro\ss e Plattformen, welche \gls{gls-CPaaS} anbieten, stellen umfangreiche Dokumentationen, \gls{gls-API} und oft zentral verwaltete Dienste bereit, wodurch die Integration meist schnell und mit wenig Eigenaufwand möglich ist. \gls{gls-DACH}-spezialisierte Anbieter und \gls{gls-OSS} bieten mehr Kontrolle, erfordern jedoch häufig zusätzliche Konfiguration und technisches Know-how, insbesondere bei vollständig selbst gehosteten Systemen. Hybrid-Modelle kombinieren lokale Kernsysteme mit Cloud-Diensten und ermöglichen so Flexibilität, setzen aber ebenfalls Erfahrung in der Systemintegration voraus. Internationale Erfahrungen und systematische Übersichten belegen, dass diese Integrationsherausforderungen und Vorteile auch in anderen Märkten beobachtet werden können \parencite{Todorov2025LLMDispatcher,Ngobeni2025AIVoIP}. Insgesamt bestimmt die Wahl des Anbieters und des Bereitstellungsmodells, wie viel Eigenleistung bei der Integration in eigene Infrastruktur und beim Betrieb solcher Telefonsysteme notwendig ist.
+
+\section{Datenschutz und Compliance}\label{sec:datenschutz_compliance}
+
+Für \gls{gls-KMU} in \gls{gls-DACH} ist Datenschutz nicht optional, sondern zentral. Das bedeutet konkret: \gls{gls-DSGVO}-Konformität und gültige \gls{gls-AVV} mit dem Anbieter bilden die Basis für konforme Systeme. EU-Datenstandorte und dokumentierte Speicherorte sind nicht nur legal erforderlich, sondern beeinflussen auch Latenzen und Zuverlässigkeit. Besonders kritisch sind Audio-Aufzeichnungen. Bei Multi-Vendor-Setups müssen Subprozessoren für \gls{gls-LLM}-Dienste transparent offengelegt und in \gls{gls-AVV} dokumentiert sein. Dies ist ein Aspekt einer Vielzahl weiterer Aspekte, die in der Evaluationsphase explizit geprüft werden sollten. Datenminimierung und Datenqualität
+bedeutet auch: Welche Metadaten speichert der Anbieter wirklich? Telefonnummern, Transkripte oder Intent-Labels müssen minimiert und pseudonymisiert werden \parencite{Data2025_AIDataQuality}.
+
+\section{Limitierungen aus der Praxis}
+In der Praxis zeigen sich wiederkehrende Herausforderungen, die bei der Auswahl von Anbietern, die \gls{gls-KI}-basierte Systeme bereitstellen, berücksichtigt werden müssen. Die Rufummernverfügbarkeit ist eine kritische Herausforderung und für \gls{gls-SIP}-Nutzung unverzichtbar. Viele Cloud-Plattformen bieten primär Rufnummern an, die an Standorte in den USA gebunden sind, weil die Infrastruktur historisch dort konzentriert ist. LiveKit-Cloud beispielsweise hat optionale \gls{gls-SIP}-Anbindung und Rufnummernkauf in einem Video-Announcement vorgestellt und auch in der offiziellen LiveKit Dokumentation beschrieben \parencite{livekit_telephony_docs}. Jedoch wird in diesem Zusammenhang ein rein cloudbasiertes Bereitstellungsmodell angeboten. Internationale Verfügbarkeiten von Rufnummern, die in das cloudbasierte System direkt integriert werden können, werden nur schrittweise erweitert. Für Unternehmen und Kunden in \gls{gls-DACH} bedeutet das, dass Portierungen oder Rufnummern separat geklärt werden müssen. Dieser Prozess kann einige Zeit und viele Ressourcen benötigen. Hinzu kommt die geografische Abhängigkeit von Rechenregionen und Media-Path-Routing \parencite{rfc3550}: Je weiter der Datenfluss entfernt ist, desto höher ist die Latenz \parencite{ITU-T-G114} und desto schwieriger wird die Einhaltung von \gls{gls-DSGVO}-Anforderungen zur lokalen Datenverarbeitung.
+
+\section{Marktcharakteristika und Trends}
+Der Markt für \gls{gls-KI}-basierte Telefonsysteme mit \gls{gls-SIP}-Integration ist seit 2022-2023 stark fragmentiert und wächst schnell. Beispielsweise profitieren Anbieter wie RetellAI \parencite{retellai_sip_blog} von der Verfügbarkeit hochperformanter \gls{gls-LLM}. Anbieter nutzen diese leistungsstarken Technologien in ihrer Softwareentwicklung und machen sie damit für viele weitere Kunden durch ihre Software und Plattformen zugänglich.
+Basierend auf Marktbeobachtungen und öffentlichen Ankündigungen sind diese typischerweise mit Risikokapital finanziert und fokussieren sich auf Skalierungen auf Enterprise-Level, anstatt kurzfristige Profitabilität zu steigern und die Stärkung lokaler IT-Partner oder \gls{gls-KMU} zu ermöglichen. \parencite{retellai_seed_blog} Das birgt Risiken für langfristige Partnerschaften.
+
+Open-Source-Infrastruktur profitiert von dieser Markt-Fragmentierung und deren Investmentstrategien. {Asterisk} ist als produktionsreife PBX/VoIP-Plattform etabliert \parencite{asterisk_project}. Moderne Frameworks wie LiveKit ermöglichen \gls{gls-WebRTC}-Infrastrukturen und können sowohl cloudbasiert als auch lokal eingesetzt werden \parencite{livekit_docs}.
+
+\section{Anbieter-Überblick und Kurzbewertung}
+Mithilfe der Anforderungen werden nun konkrete Lösungen betrachtet. Die folgende Tabelle~\ref{tab:anbieter_overview} stellt sieben kommerzielle Anbieter gegenüber. Dabei werden gro\ss e, etablierte \gls{gls-CPaaS}-Plattformen und spezialisierte Anbieter in der \gls{gls-DACH}-Region betrachtet. Das Ziel ist es nicht, eine eins-zu-eins-Vergleichbarkeit zu suggerieren, sondern verschiedene Anbieter und deren Bereitstellungsmodelle zu vergleichen und einzuordnen. Was sind die Kernfunktionen? Für welche Zielgruppe ist der Anbieter konzipiert? Wie steht es um Datenschutz und Compliance? Dies sind wichtige Kriterien, die bei Kaufentscheidungen oft zu spät geprüft werden. Die Bewertungen basieren auf öffentlich zugänglichen Produktdokumentationen und
+Webseiten der Anbieter (Stand: Januar 2026) und sind bewusst nicht normativ, sondern deskriptiv formuliert.
+
+\renewcommand{\arraystretch}{1.18} % angenehmer Zeilenabstand
+\begin{table}[H]
+\caption{Überblick zu Kernfeatures, Zielgruppe und DSGVO/Compliance}\label{tab:anbieter_overview}
+\small
+\begin{tabularx}{\linewidth}{@{}>{\raggedright\arraybackslash}m{3.2cm} L L >{\raggedright\arraybackslash}m{3.2cm}@{}}
+\toprule
+\textbf{Anbieter} & \textbf{Kernfeatures} & \textbf{Zielgruppe} & \textbf{DSGVO} \\
+\midrule
+\parbox[t]{3.2cm}{Cloudonix\\\url{cloudonix.com}} & \gls{gls-SIP} Trunking, No-Code \gls{gls-IVR}, \gls{gls-API}s & Entwickler, Unternehmen & \parbox[t]{3.2cm}{US-Fokus, EU-Hosting überprüfen, mit \gls{gls-AVV} absichern} \\
+\addlinespace[8pt]
+\parbox[t]{3.2cm}{DialogShift\\\url{dialogshift.com}} & Phone \gls{gls-AI}, Chat \gls{gls-AI}, WhatsApp-Integration & Hotellerie, Service-Teams & \parbox[t]{3.2cm}{\gls{gls-DSGVO}-orientiert, mit \gls{gls-AVV} absichern} \\
+\addlinespace[8pt]
+\parbox[t]{3.2cm}{RetellAI\\\url{retellai.com}} & \gls{gls-LLM} Voice Agent, Multi-Turn, \gls{gls-API} & Kundenservice, Gesundheitssektor & \parbox[t]{3.2cm}{US-Fokus, EU-Hosting überprüfen, mit \gls{gls-AVV} absichern} \\
+\addlinespace[8pt]
+\parbox[t]{3.2cm}{VideoSDK\\\url{videosdk.live}} & Voice/Video-\gls{gls-API}, \gls{gls-SIP} & Entwickler, Unternehmen & \parbox[t]{3.2cm}{US-Fokus, EU-Hosting überprüfen, mit \gls{gls-AVV} absichern} \\
+\addlinespace[8pt]
+\parbox[t]{3.2cm}{Botfriends\\\url{botfriends.de}} & Voicebot/Chatbot, Omnichannel, No-Code & Kundenservice, Mittelstand & \parbox[t]{3.2cm}{EU-Hosting verfügbar, mit \gls{gls-AVV} absichern} \\
+\addlinespace[8pt]
+\parbox[t]{3.2cm}{Synthflow\\\url{synthflow.ai}} & Voice \gls{gls-AI}, Flow Designer, \gls{gls-API} & \gls{gls-BPO}, Gesundheitssektor & \parbox[t]{3.2cm}{EU-Regionen möglich, Kein Self-Hosting, mit \gls{gls-AVV} absichern} \\
+\addlinespace[8pt]
+\parbox[t]{3.2cm}{FonioAI\\\url{fonio.ai}} & Voice \gls{gls-AI} & KMU & \parbox[t]{3.2cm}{EU-Anbieter, \gls{gls-DSGVO}-konform, mit \gls{gls-AVV} absichern} \\
+\bottomrule
+\end{tabularx}
+\begin{flushleft}\footnotesize
+\textit{Quelle:} Eigene Darstellung nach \parencite{cloudonix},
+\parencite{dialogshift_phone_ai}, \parencite{retellai_sip_blog}, \parencite{videosdk_phone_agent}, \parencite{botfriends_phonebot}, \parencite{synthflow}, \parencite{fonio}.
+\end{flushleft}
+\end{table}
+
+\section{Kostenmodelle und Transparenz}
+Neben Funktionalität und Compliance ist Transparenz bei der Preisgestaltung ein starkes Kriterium, das zur Entscheidungsfindung beiträgt. Gerade für \gls{gls-KMU}, die Skalierungskosten verlässlich planen müssen, sollten diese Aspekte bei der Einführung eines \gls{gls-KI}-basierten Telefonsystems beachtet werden. Die folgende Tabelle~\ref{tab:pricing_comparison} zeigt aktuell öffentlich verfügbare Preismodelle (Stand: Januar 2026) für realistische Szenarien.
+
+\begin{table}[H]
+\caption{Preisvergleich anhand von Bereitstellungsmodellen}\label{tab:pricing_comparison}
+\small
+\begin{tabularx}{\linewidth}{@{}l L L L L@{}}
+\toprule
+\textbf{Anbieter} & \textbf{Preismodell} & \textbf{100 Anrufe/Monat (5h)} & \textbf{1000 Anrufe/Monat (50h)} & \textbf{Transparenz} \\
+\midrule
+Cloudonix & Abo-Modell (0,05–0,15 EUR/min) + Trunk & 25-45 EUR & 150-460 EUR & Öffentlich \\
+DialogShift & Projekt-Basis (Custom) & auf Anfrage & auf Anfrage & Eingeschränkt \\
+RetellAI & Pay-as-you-go (0,10 USD/min) + APIs & 39-71 EUR\textsuperscript{1} & 393-708 EUR\textsuperscript{1} & Teilweise \\
+VideoSDK & Subscription-Tier (99 USD/Monat = 1000 min) & 90 EUR\textsuperscript{2} & 90 EUR\textsuperscript{2} & Öffentlich \\
+Botfriends & Full-Service (Custom) & auf Anfrage & auf Anfrage & Eingeschränkt \\
+Synthflow & Fixed Subscription-Tiers (ab 99 USD/Monat) & 90 EUR\textsuperscript{3} & 90-270 EUR\textsuperscript{3} & Öffentlich \\
+FonioAI & Pay-as-you-go \gls{gls-SIP}-Trunk (9,99 EUR) + Nummern (3,99 EUR) + 0,02 EUR/min & 32-64 EUR\textsuperscript{4} & 194-514 EUR\textsuperscript{4} & Öffentlich \\
+\bottomrule
+\end{tabularx}
+\begin{flushleft}\footnotesize
+\textit{Quelle:} Öffentliche Pricing-Seiten der Anbieter (abgerufen 15. Januar 2026): \parencite{cloudonix_pricing},
+\parencite{retellai_pricing}, \parencite{videosdk_pricing}, \parencite{synthflow_pricing}, \parencite{botfriends_pricing}, \parencite{fonio_pricing}. \\
+\textsuperscript{1} RetellAI: 0,10 USD/min (\textasciitilde 0,09 EUR/min) $\approx$ 27 EUR (100 Anrufe) bzw. 273 EUR (1000 Anrufe) + nutzungsabhängige STT/TTS/LLM-Kosten (ca. +12-44 EUR bzw. +120-435 EUR je nach API-Wahl) \\
+\textsuperscript{2} VideoSDK Starter-Tier: 99 USD/Monat (\textasciitilde 90 EUR). Minutenkontingent abhängig vom gewählten Tier (1000-3000 min) \\
+\textsuperscript{3} Synthflow: Starter-Tier 99 USD/Monat; Professional 299 USD/Monat; Anrufe im Tier enthalten \\
+\textsuperscript{4} FonioAI: Infrastruktur (\gls{gls-SIP}-Trunk + Nummern + 0,02 EUR/min) ca. 20 EUR (100 Anrufe) bzw. 74 EUR (1000 Anrufe). \gls{gls-AI}-Layer (TTS/STT/LLM) zusätzlich ca. +12-44 EUR (100 Anrufe) bzw. +120-440 EUR (1000 Anrufe) über externe \gls{gls-API}s je nach \gls{gls-TTS}-Anbieter (günstige Alternative vs. OpenAI Standard)
+\end{flushleft}
+\end{table}
+
+\section{Kostentrends und Schlussfolgerungen}
+Auf Basis der aktuellen öffentlichen Preismodelle (Stand: Januar 2026, siehe Tabelle~\ref{tab:pricing_comparison} für detaillierte Kosten) zeigen sich klare Muster. Tiered-Subscription-Modelle wie zum Beispiel VideoSDK oder Synthflow können für \gls{gls-KMU} kostengünstiger sein als Pay-as-you-go-Systeme, da sie unbegrenzte Anrufe innerhalb des Minuten-Limits ermöglichen. Dies ist ein Vorteil, der jedoch erst bei höherem Anrufvolumen beziehungsweise Anrufaufkommen sichtbar wird. Pay-as-you-go-Anbieter wie RetellAI und FonioAI bieten Flexibilität, können aber bei Volumen-Schwankungen teuer werden. Ein kritischer Faktor ist die Transparenz, wobei diese nicht bei allen betrachteten Anbietern gegeben ist. VideoSDK und Synthflow haben öffentlich zugängliche Preise, die eine klare Kostenplanung ermöglichen, während projektbezogene und dadurch individuelle Kostenmodelle, die DialogShift und Botfriends verwenden, erst nach Kontaktaufnahme in den Kostenvergleich einbezogen werden können. Dieser Nachteil muss in Entscheidungsprozessen vor der Integration oder dem Kauf eines solchen Produkts bedacht werden.
+
+Erkenntnisse zur Zuverlässigkeit virtualisierter Netzwerke treiben Hybrid-Deployments voran \parencite{Antonova2025} \parencite{ReliabilityVirtualizedNetworks}. Daher wird Unternehmen im Sektor von \gls{gls-KMU} empfohlen, Hybrid-Modelle oder vollständig selbstgehostete Systeme zu betreiben und zu nutzen. Kunden von reinen Cloud-Modellen sind oft stark an einen bestimmten Anbieter sowie dessen Dienste, Prozesse und Richtlinien gebunden und können nur mit hohem Aufwand oder hohen Kosten zu einem anderen Anbieter wechseln. FonioAI bietet sich daher als flexibler Pay-as-you-go-Anbieter der \gls{gls-DACH}-Region an und erfüllt bereits einige wichtige Grundsätze zur Datenkonformität und zum Datenschutz. Dennoch ist es wichtig, für einen produktiven Einsatz von \gls{gls-KI}-basierten Telefonsystemen individuell nach den Anforderungen des Unternehmens und den Zielen zu entscheiden.
+
